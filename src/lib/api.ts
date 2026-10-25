@@ -179,3 +179,60 @@ export const applicationApi = {
     return callApi(() => apiClient.get("/application/status"));
   },
 };
+
+// Admin Storage helpers
+export function getAdminToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("maatram_admin_token");
+}
+
+export function setAdminToken(token: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("maatram_admin_token", token);
+  }
+}
+
+export function clearAdminToken() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("maatram_admin_token");
+    localStorage.removeItem("maatram_admin_user");
+  }
+}
+
+// Admin Management API Endpoints
+export const adminApi = {
+  login: async (credentials: { email: string; password: string }): Promise<ApiResponse> => {
+    const res = await callApi(() => apiClient.post("/admin/login", credentials));
+    if (res.success && res.adminToken) {
+      setAdminToken(res.adminToken);
+      if (typeof window !== "undefined" && res.user) {
+        localStorage.setItem("maatram_admin_user", JSON.stringify(res.user));
+      }
+    }
+    return res;
+  },
+
+  getApplications: async (params?: {
+    status?: string;
+    search?: string;
+    district?: string;
+  }): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get("/admin/applications", { params }));
+  },
+
+  getApplicationById: async (id: string): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get(`/admin/applications/${id}`));
+  },
+
+  updateStatus: async (id: string, status: string): Promise<ApiResponse> => {
+    return callApi(() => apiClient.patch(`/admin/applications/${id}/status`, { status }));
+  },
+
+  deleteApplication: async (id: string): Promise<ApiResponse> => {
+    return callApi(() => apiClient.delete(`/admin/applications/${id}`));
+  },
+
+  logout: () => {
+    clearAdminToken();
+  },
+};

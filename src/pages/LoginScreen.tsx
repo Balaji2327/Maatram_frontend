@@ -40,6 +40,25 @@ function LoginContent() {
   const [canResend, setCanResend] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Secret 3-Click Logo Trigger for Admin Portal
+  const [logoClicks, setLogoClicks] = useState(0);
+  const lastLogoClickTimeRef = useRef<number>(0);
+
+  const handleLogoClick = () => {
+    const now = Date.now();
+    if (now - lastLogoClickTimeRef.current < 2000) {
+      const newCount = logoClicks + 1;
+      setLogoClicks(newCount);
+      if (newCount >= 3) {
+        setLogoClicks(0);
+        router.push("/admin/login");
+      }
+    } else {
+      setLogoClicks(1);
+    }
+    lastLogoClickTimeRef.current = now;
+  };
+
   useEffect(() => {
     if (targetParam) {
       setIdentifier(targetParam);
@@ -228,16 +247,28 @@ function LoginContent() {
 
   return (
     <div className="w-full max-w-lg bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl shadow-slate-200/60 relative z-10 transition-all duration-300">
-      {/* Brand Logo */}
-      <div className="flex justify-center mb-4">
-        <Image
-          src="/assets/images/logo.png"
-          alt="Maatram Foundation"
-          width={160}
-          height={80}
-          priority
-          className="h-14 w-auto object-contain"
-        />
+      {/* Brand Logo (Click 3 times to open Admin Portal) */}
+      <div className="flex flex-col items-center justify-center mb-4">
+        <button
+          type="button"
+          onClick={handleLogoClick}
+          className="group transition-transform active:scale-95 cursor-pointer relative focus:outline-none"
+          title="Maatram Foundation"
+        >
+          <Image
+            src="/assets/images/logo.png"
+            alt="Maatram Foundation"
+            width={160}
+            height={80}
+            priority
+            className="h-14 w-auto object-contain transition-opacity group-hover:opacity-90"
+          />
+          {logoClicks > 0 && logoClicks < 3 && (
+            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-mono text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-300 shadow-sm animate-pulse whitespace-nowrap">
+              Admin trigger: {logoClicks}/3 clicks
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Heading & Subtitle */}
