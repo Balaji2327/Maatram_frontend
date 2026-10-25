@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-heading: 'Hanken Grotesk', sans-serif;
+    --font-primary: 'Libre Franklin', sans-serif;
+  }
+}
+
+body {
+  font-family: var(--font-primary), 'Libre Franklin', sans-serif;
+  background-color: #FFFFFF;
+  color: #0F172A;
+}
+
+.font-heading {
+  font-family: var(--font-heading), 'Hanken Grotesk', sans-serif;
+}
+
+.font-primary {
+  font-family: var(--font-primary), 'Libre Franklin', sans-serif;
+}
