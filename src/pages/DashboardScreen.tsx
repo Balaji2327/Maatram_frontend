@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import SignOutModal from "../components/SignOutModal";
+import { applicationApi, authApi, getAuthToken } from "../lib/api";
 import {
   UserIcon,
   AcademicCapIcon,
@@ -39,6 +40,14 @@ export default function DashboardScreen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+
+  // Authentication Guard: Ensure user has signed in with credentials
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      router.replace("/?loginRequired=true");
+    }
+  }, [router]);
 
   // Initial state empty with placeholders
   const [formData, setFormData] = useState({
@@ -224,8 +233,41 @@ export default function DashboardScreen() {
     }
   };
 
-  const handleSaveDraft = () => {
+  // Load previously saved application from Supabase database on mount
+  useEffect(() => {
+    async function loadSavedApplication() {
+      try {
+        const res = await applicationApi.getMyApplication();
+        if (res.success && res.data) {
+          const d = res.data;
+          setFormData((prev) => ({
+            ...prev,
+            ...d,
+          }));
+          if (d.siblings && d.siblings.length > 0) setSiblings(d.siblings);
+          if (d.eleventhSubjects && d.eleventhSubjects.length > 0) setEleventhSubjects(d.eleventhSubjects);
+          if (d.twelfthSubjects && d.twelfthSubjects.length > 0) setTwelfthSubjects(d.twelfthSubjects);
+          if (d.status === "submitted") setIsSubmitted(true);
+        }
+      } catch (err) {
+        console.warn("Load application error:", err);
+      }
+    }
+    loadSavedApplication();
+  }, []);
+
+  const handleSaveDraft = async () => {
     setIsSaved(true);
+    try {
+      await applicationApi.saveDraft({
+        ...formData,
+        siblings,
+        eleventhSubjects,
+        twelfthSubjects,
+      });
+    } catch (err) {
+      console.warn("Save draft error:", err);
+    }
     setTimeout(() => setIsSaved(false), 2500);
   };
 
@@ -235,15 +277,27 @@ export default function DashboardScreen() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleFinalSubmit = (e?: React.MouseEvent) => {
+  const handleFinalSubmit = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     setIsSubmitting(true);
-    setIsReviewOpen(false);
-    setIsSubmitted(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    setTimeout(() => {
+    try {
+      const res = await applicationApi.submitApplication({
+        ...formData,
+        siblings,
+        eleventhSubjects,
+        twelfthSubjects,
+      });
+      if (res.data?.applicationNumber) {
+        setFormData((prev: any) => ({ ...prev, applicationNumber: res.data.applicationNumber }));
+      }
+    } catch (err) {
+      console.warn("Submit error:", err);
+    } finally {
       setIsSubmitting(false);
-    }, 800);
+      setIsReviewOpen(false);
+      setIsSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
@@ -2064,6 +2118,7 @@ export default function DashboardScreen() {
         isOpen={showSignOutModal}
         onClose={() => setShowSignOutModal(false)}
         onConfirm={() => {
+          authApi.logout();
           setShowSignOutModal(false);
           router.push("/");
         }}

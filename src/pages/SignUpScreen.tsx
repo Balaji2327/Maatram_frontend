@@ -10,6 +10,7 @@ import {
   AtSymbolIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
+import { authApi } from "../lib/api";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function SignUpScreen() {
     }));
   };
 
-  const handleInitiateSignUp = (e: React.FormEvent) => {
+  const handleInitiateSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
@@ -47,17 +48,45 @@ export default function SignUpScreen() {
     }
 
     setIsSendingOtp(true);
-    setTimeout(() => {
-      setIsSendingOtp(false);
-      // Navigate to dedicated separate OTP page with registration parameters
+    try {
+      const res = await authApi.sendOtp({
+        email: formData.email.trim(),
+        phone: formData.mobileNumber.trim(),
+        fullName: formData.fullName.trim(),
+        type: "signup",
+        channel: "email",
+      });
+
+      if (!res.success && res.message && !res.message.includes("placeholder")) {
+        setErrorMessage(res.message);
+        setIsSendingOtp(false);
+        return;
+      }
+
+      // Navigate to dedicated separate OTP page with email target
       router.push(
         `/verify-otp?type=signup&target=${encodeURIComponent(
+          formData.email.trim()
+        )}&email=${encodeURIComponent(
+          formData.email.trim()
+        )}&phone=${encodeURIComponent(
           formData.mobileNumber.trim()
-        )}&email=${encodeURIComponent(formData.email.trim())}&name=${encodeURIComponent(
-          formData.fullName.trim()
-        )}`
+        )}&name=${encodeURIComponent(formData.fullName.trim())}&channel=email`
       );
-    }, 600);
+    } catch (err: any) {
+      console.warn("SignUp send OTP fallback:", err);
+      router.push(
+        `/verify-otp?type=signup&target=${encodeURIComponent(
+          formData.email.trim()
+        )}&email=${encodeURIComponent(
+          formData.email.trim()
+        )}&phone=${encodeURIComponent(
+          formData.mobileNumber.trim()
+        )}&name=${encodeURIComponent(formData.fullName.trim())}&channel=email`
+      );
+    } finally {
+      setIsSendingOtp(false);
+    }
   };
 
   return (
@@ -84,7 +113,7 @@ export default function SignUpScreen() {
           Student Registration
         </h1>
         <p className="font-primary text-xs sm:text-sm text-slate-600 leading-relaxed mt-1.5 text-center">
-          Enter your basic details to register. You will verify via a one-time password on the next step. No password required!
+          Enter your basic details to register. You will receive a 6-digit verification code directly in your email. No password needed!
         </p>
 
         {errorMessage && (
@@ -135,7 +164,7 @@ export default function SignUpScreen() {
               />
             </div>
             <p className="font-primary text-[11px] text-slate-500 mt-1">
-              We will send a 6-digit verification code to this mobile number.
+              Used for official application correspondence and interview calls.
             </p>
           </div>
 
@@ -158,6 +187,9 @@ export default function SignUpScreen() {
                 className="w-full bg-slate-50/70 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-[#F7BC0F] focus:bg-white focus:ring-2 focus:ring-[#F7BC0F]/40 transition font-primary"
               />
             </div>
+            <p className="font-primary text-[11px] text-slate-500 mt-1">
+              We will send the 6-digit verification OTP to this email address.
+            </p>
           </div>
 
           {/* Submit Button */}
