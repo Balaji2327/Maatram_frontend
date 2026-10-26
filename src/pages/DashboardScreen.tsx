@@ -51,6 +51,7 @@ export default function DashboardScreen() {
 
   // Initial state empty with placeholders
   const [formData, setFormData] = useState({
+    applicationNumber: "",
     // Personal Details
     fullName: "",
     dob: "",
@@ -357,7 +358,7 @@ export default function DashboardScreen() {
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Active Session" />
                 </div>
                 <span className="text-[10px] text-slate-500 font-mono">
-                  MTR-2025-APP4821
+                  {formData.applicationNumber || "MF-2025-001"}
                 </span>
               </div>
             </div>
@@ -391,7 +392,7 @@ export default function DashboardScreen() {
             </h2>
             <p className="font-primary text-sm text-slate-600 mt-2 max-w-md mx-auto">
               Your scholarship application has been received under Application ID:{" "}
-              <strong className="text-slate-900 font-mono">MTR-2025-APP4821</strong>.
+              <strong className="text-slate-900 font-mono">{formData.applicationNumber || "MF-2025-001"}</strong>.
               Our verification team will review your academic and socio-economic details.
             </p>
 
@@ -453,7 +454,7 @@ export default function DashboardScreen() {
                 </div>
                 <div className="sm:text-right bg-slate-50 border border-slate-200 p-3 rounded-2xl">
                   <span className="block font-mono text-xs font-bold text-slate-900">
-                    Application ID: MTR-2025-APP4821
+                    Application ID: {formData.applicationNumber || "MF-2025-001"}
                   </span>
                   <span className="inline-block mt-1 text-[11px] font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-full">
                     Ready for Final Submission
@@ -1902,10 +1903,11 @@ export default function DashboardScreen() {
                           className="w-full mt-1.5 bg-slate-50/70 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#F7BC0F] focus:bg-white focus:ring-2 focus:ring-[#F7BC0F]/40 transition"
                         >
                           <option value="">Select Target Degree</option>
-                          <option value="B.E. / B.Tech">B.E. / B.Tech (Engineering)</option>
-                          <option value="B.Sc">B.Sc (Arts & Science)</option>
-                          <option value="B.Com / BBA">B.Com / BBA (Commerce & Management)</option>
-                          <option value="B.Sc Agriculture">B.Sc Agriculture / Horticulture</option>
+                          <option value="Engineering (B.E / B.Tech)">Engineering (B.E / B.Tech)</option>
+                          <option value="Arts & Science (B.Sc / B.A)">Arts & Science (B.Sc / B.A)</option>
+                          <option value="Nursing / Paramedical">Nursing / Paramedical</option>
+                          <option value="Commerce & Management (B.Com / BBA)">Commerce & Management (B.Com / BBA)</option>
+                          <option value="Agriculture (B.Sc Agri / Horti)">Agriculture (B.Sc Agri / Horti)</option>
                         </select>
                       </div>
 

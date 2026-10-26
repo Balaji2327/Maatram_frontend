@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import SignOutModal from "../components/SignOutModal";
+import { applicationApi } from "../lib/api";
 import {
   PhoneIcon,
   MapPinIcon,
@@ -20,6 +21,23 @@ import {
 export default function SelectionProcessScreen() {
   const router = useRouter();
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [appNumber, setAppNumber] = useState("MF-2025-001");
+
+  useEffect(() => {
+    async function loadStatus() {
+      try {
+        const res = await applicationApi.getStatus();
+        if (res.data?.applicationNumber) {
+          setAppNumber(res.data.applicationNumber);
+        } else if (res.applicationNumber) {
+          setAppNumber(res.applicationNumber);
+        }
+      } catch (err) {
+        console.warn("Failed to load status:", err);
+      }
+    }
+    loadStatus();
+  }, []);
 
   const stages = [
     {
@@ -124,7 +142,7 @@ export default function SelectionProcessScreen() {
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Active Session" />
                 </div>
                 <span className="text-[10px] text-slate-500 font-mono">
-                  MTR-2025-APP4821
+                  {appNumber}
                 </span>
               </div>
             </div>
@@ -175,7 +193,7 @@ export default function SelectionProcessScreen() {
 
             <div className="flex flex-col sm:items-end bg-slate-50 border border-slate-200 p-4 rounded-2xl text-xs space-y-1">
               <span className="text-slate-500">Application Number:</span>
-              <span className="font-mono font-bold text-slate-900 text-sm">MTR-2025-APP4821</span>
+              <span className="font-mono font-bold text-slate-900 text-sm">{appNumber}</span>
               <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold text-[11px] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Application Received
