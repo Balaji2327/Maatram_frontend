@@ -6,6 +6,7 @@ import {
   PaperAirplaneIcon,
   MinusIcon,
   ArrowPathIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 
 interface Message {
@@ -16,11 +17,11 @@ interface Message {
   options?: string[];
 }
 
-interface AdminChatbotProps {
+interface AskMarkBotProps {
   applicationsCount?: number;
 }
 
-export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProps) {
+export default function AskMarkBot({ applicationsCount = 0 }: AskMarkBotProps) {
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -36,13 +37,13 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
     {
       id: "welcome-1",
       sender: "bot",
-      text: "Hello Admin! 👋 I'm Mark, your Maatram AI Assistant. I can help you query applicant data, understand cutoff trends, or check scholarship eligibility guidelines.",
+      text: "Hello! 👋 I'm Mark, your Maatram AI Assistant. I can help answer queries about scholarship eligibility, cutoff cutoffs, student verification, partner colleges, and alumni network.",
       timestamp: "Just now",
       options: [
-        "Cutoff eligibility rules",
-        "Verification workflow",
+        "Cutoff eligibility criteria",
+        "3-stage verification flow",
+        "Partner colleges list",
         "First-graduate priority",
-        "Total applicant stats",
       ],
     },
   ];
@@ -75,25 +76,31 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
     if (!textToSend) setInputText("");
     setIsTyping(true);
 
-    // Simulated contextual AI response
+    // Contextual AI response logic
     setTimeout(() => {
       let botReply = "";
       const lower = text.toLowerCase();
 
       if (lower.includes("cutoff") || lower.includes("mark")) {
-        botReply = "For Engineering scholarships, Maatram prioritizes candidates with 12th HSC Cutoffs above 170/200, though special consideration is given to first-generation graduates and students from rural government schools.";
+        botReply = "For Engineering admissions, Maatram looks for 12th HSC Cutoffs above 165-170/200. Special affirmative weightage is given to first-generation graduates, rural government school students, and single-parent backgrounds.";
       } else if (lower.includes("verification") || lower.includes("stage") || lower.includes("process")) {
-        botReply = "The 3-stage verification flow is:\n1. Online Application Screening (Academic & Income check)\n2. Telephonic Interview with Candidate & Parents\n3. In-Person Home Verification by Maatram Trustees.";
+        botReply = "The 3-stage scholarship evaluation process:\n1. Online Application Screening (12th Marks & Family Income)\n2. Telephonic Verification Call with Candidate and Parents\n3. Physical Home Visit & Background Inquiries by Trustees.";
+      } else if (lower.includes("college") || lower.includes("partner")) {
+        botReply = "Maatram collaborates with top Tamil Nadu engineering institutions (including PSG Tech, CIT, SKCET, TCE, SASTRA, and VIT) to provide 100% free higher education covering tuition, hostel, and food.";
       } else if (lower.includes("first-graduate") || lower.includes("first graduate")) {
-        botReply = "First-Graduate students receive high preference under Maatram Trust criteria, provided the total annual family income does not exceed ₹2,00,000.";
+        botReply = "First-Graduate students receive high priority in Maatram selection, provided family annual income is within the qualifying threshold (under ₹2,00,000/year).";
+      } else if (lower.includes("alumni") || lower.includes("graduate")) {
+        botReply = "Maatram Alumni network consists of 320+ graduates placed at top tier technology firms (Zoho, TCS, Infosys, Amazon) who actively mentor current scholars.";
+      } else if (lower.includes("event") || lower.includes("workshop")) {
+        botReply = "Regular orientation workshops, mock interview bootcamps, and alumni meetups are organized throughout the academic year. You can manage them in the Events portal.";
       } else if (lower.includes("stat") || lower.includes("applicant") || lower.includes("total") || lower.includes("count")) {
-        botReply = `Currently, there are ${applicationsCount} registered applications in the database. You can filter them by district or cutoff directly from the dashboard table.`;
-      } else if (lower.includes("district") || lower.includes("location") || lower.includes("chennai")) {
-        botReply = "Applications span across multiple districts including Chennai, Coimbatore, Madurai, Tiruchirappalli, Salem, and rural parts of Tamil Nadu.";
-      } else if (lower.includes("contact") || lower.includes("trust") || lower.includes("office")) {
-        botReply = "Maatram Foundation Head Office is located in Chennai, Tamil Nadu. Official inquiries can be addressed to admin@maatram.org or trust helpline.";
+        botReply = applicationsCount > 0
+          ? `There are currently ${applicationsCount} registered scholarship applications under review in the Maatram system.`
+          : "Applications are actively tracked in real-time across Tamil Nadu districts.";
+      } else if (lower.includes("contact") || lower.includes("trust") || lower.includes("office") || lower.includes("help")) {
+        botReply = "Maatram Foundation Head Office is in Chennai, Tamil Nadu. Official correspondence: contact@maatramfoundation.com.";
       } else {
-        botReply = `Understood! You asked: "${text}". I'm Mark, your Maatram AI assistant. I can help you filter applications, analyze student credentials, or review documentation requirements. What specific detail would you like to explore?`;
+        botReply = `Understood! You asked: "${text}". I'm Mark, the Maatram AI assistant. I can help with scholarship criteria, student screening guidelines, colleges, and foundation processes. What specific information can I find for you?`;
       }
 
       const replyMessage: Message = {
@@ -105,7 +112,7 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
 
       setMessages((prev) => [...prev, replyMessage]);
       setIsTyping(false);
-    }, 650);
+    }, 550);
   };
 
   const handleReset = () => {
@@ -115,8 +122,8 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
   if (!mounted) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 select-none">
-      {/* Floating Chat Launcher Button */}
+    <div className="fixed bottom-6 right-6 z-50 select-none font-primary">
+      {/* Floating Chat Launcher Button (Clean Yellow Brand) */}
       {!isOpen && (
         <button
           type="button"
@@ -124,9 +131,10 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
             setIsOpen(true);
             setIsMinimized(false);
           }}
-          className="group relative flex items-center justify-center px-5 py-2.5 bg-[#F7BC0F] hover:bg-[#eab007] text-slate-950 font-heading font-black text-xs rounded-full shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer active:scale-95"
+          className="group relative flex items-center gap-2 px-4 py-2.5 bg-[#F7BC0F] hover:bg-[#eab007] text-slate-950 font-heading font-black text-xs rounded-full shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer active:scale-95 border border-[#e5ad0c]"
           aria-label="Ask Mark"
         >
+          <SparklesIcon className="w-4 h-4 stroke-[2.5]" />
           <span className="tracking-wide">Ask Mark</span>
         </button>
       )}
@@ -141,13 +149,16 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
           }`}
         >
           {/* Header */}
-          <div className="bg-[#F7BC0F] text-slate-950 px-4 py-3.5 flex items-center justify-between border-b border-amber-300/80">
+          <div className="bg-[#F7BC0F] text-slate-950 px-4 py-3 flex items-center justify-between border-b border-amber-300/80">
             <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-slate-950 text-[#F7BC0F] flex items-center justify-center font-heading font-black text-xs">
+                M
+              </div>
               <div>
-                <h4 className="font-heading font-black text-sm tracking-wide text-slate-950">
+                <h4 className="font-heading font-black text-sm tracking-wide text-slate-950 leading-tight">
                   Mark
                 </h4>
-                <p className="text-[10px] text-slate-900/80 font-semibold">Maatram AI Assistant</p>
+                <p className="text-[10px] text-slate-900/80 font-medium">Maatram AI Assistant</p>
               </div>
             </div>
 
@@ -192,10 +203,10 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
                     }`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl p-3 shadow-xs leading-relaxed ${
+                      className={`max-w-[85%] rounded-2xl p-3 shadow-2xs leading-relaxed ${
                         m.sender === "user"
                           ? "bg-[#F7BC0F] text-slate-950 font-medium rounded-br-xs"
-                          : "bg-white text-slate-900 border border-slate-200/90 rounded-bl-xs"
+                          : "bg-white text-slate-900 border border-slate-200 rounded-bl-xs"
                       }`}
                     >
                       <p className="whitespace-pre-line">{m.text}</p>
@@ -224,7 +235,7 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
 
                 {/* Typing indicator */}
                 {isTyping && (
-                  <div className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-3 py-2 rounded-2xl w-fit shadow-xs">
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-2 rounded-2xl w-fit shadow-2xs">
                     <span className="w-1.5 h-1.5 bg-[#F7BC0F] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                     <span className="w-1.5 h-1.5 bg-[#F7BC0F] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                     <span className="w-1.5 h-1.5 bg-[#F7BC0F] rounded-full animate-bounce"></span>
@@ -261,8 +272,8 @@ export default function AdminChatbot({ applicationsCount = 0 }: AdminChatbotProp
                   </button>
                 </form>
                 <div className="flex items-center justify-between text-[9px] text-slate-400 px-1">
-                  <span>Mark • AI Assistant</span>
-                  <span>UI Preview</span>
+                  <span>Mark • Maatram AI Assistant</span>
+                  <span>Online</span>
                 </div>
               </div>
             </>

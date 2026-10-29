@@ -1,4 +1,4 @@
-import AdminLoginScreen from "../../../pages/AdminLoginScreen";
+import AdminLoginScreen from "../../../pages/admin/AdminLoginScreen";
 
 export const metadata = {
   title: "Admin Sign In | Maatram Foundation",

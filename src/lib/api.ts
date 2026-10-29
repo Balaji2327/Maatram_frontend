@@ -228,6 +228,27 @@ export const adminApi = {
     return callApi(() => apiClient.patch(`/admin/applications/${id}/status`, { status }));
   },
 
+  updateVolunteerSuggestion: async (
+    id: string,
+    suggestion: string,
+    volunteer_name?: string
+  ): Promise<ApiResponse> => {
+    return callApi(() =>
+      apiClient.patch(`/admin/applications/${id}/volunteer-suggestion`, {
+        suggestion,
+        volunteer_name,
+      })
+    );
+  },
+
+  bulkUpdateVolunteerSuggestions: async (
+    suggestions: Array<{ id?: string; application_number?: string; suggestion: string; volunteer_name?: string }>
+  ): Promise<ApiResponse> => {
+    return callApi(() =>
+      apiClient.post("/admin/applications/bulk-volunteer-suggestions", { suggestions })
+    );
+  },
+
   deleteApplication: async (id: string): Promise<ApiResponse> => {
     return callApi(() => apiClient.delete(`/admin/applications/${id}`));
   },

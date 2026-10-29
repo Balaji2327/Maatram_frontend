@@ -12,7 +12,7 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
-import { adminApi } from "../lib/api";
+import { adminApi } from "../../lib/api";
 
 export default function AdminLoginScreen() {
   const router = useRouter();
