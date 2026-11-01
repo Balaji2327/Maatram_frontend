@@ -129,25 +129,6 @@ export default function AdminDashboardScreen() {
                 Consolidated live overview of student applications, volunteer operations, partner colleges, scholars, and community updates.
               </p>
             </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={fetchApplications}
-                disabled={isRefreshing}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-heading font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition cursor-pointer disabled:opacity-50"
-              >
-                <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                <span>{isRefreshing ? "Refreshing..." : "Refresh Data"}</span>
-              </button>
-              <Link
-                href="/admin/applications"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-heading font-bold text-slate-950 bg-[#F7BC0F] hover:bg-[#e5ad0c] transition cursor-pointer shadow-xs border border-[#e5ad0c]"
-              >
-                <span>Manage Applications</span>
-                <ArrowRightIcon className="w-3.5 h-3.5 stroke-[2.5]" />
-              </Link>
-            </div>
           </div>
 
           {/* High-Level Ecosystem Metric Cards (Clean Slate & Yellow Only) */}
