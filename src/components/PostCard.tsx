@@ -14,6 +14,13 @@ export interface PostCardData {
   title: string;
   content: string;
   category?: string;
+  scheduleDate?: string;
+  scheduleTime?: string;
+  location?: string;
+  videoUrl?: string;
+  videoFileName?: string;
+  images?: string[];
+  language?: string;
   authorName?: string;
   createdAt: string;
   imageUrl?: string;
@@ -42,6 +49,7 @@ export default function PostCard({
               src={post.imageUrl}
               alt={post.title}
               fill
+              unoptimized
               sizes="(max-width: 768px) 100vw, 33vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
@@ -69,6 +77,34 @@ export default function PostCard({
 
         {/* Content Body */}
         <div className="p-5 space-y-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {post.language && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                🌐 {post.language}
+              </span>
+            )}
+            {post.scheduleDate && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700">
+                📅 {post.scheduleDate} {post.scheduleTime ? `@ ${post.scheduleTime}` : ""}
+              </span>
+            )}
+            {post.location && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 truncate max-w-[140px]">
+                📍 {post.location}
+              </span>
+            )}
+            {post.videoUrl && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700">
+                🎥 Video
+              </span>
+            )}
+            {post.images && post.images.length > 1 && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800">
+                🖼️ {post.images.length} Photos
+              </span>
+            )}
+          </div>
+
           <h3
             className="font-heading font-bold text-base text-slate-900 group-hover:text-amber-700 transition-colors line-clamp-2 leading-snug"
             title={post.title}

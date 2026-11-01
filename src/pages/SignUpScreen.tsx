@@ -8,6 +8,9 @@ import {
   UserIcon,
   DevicePhoneMobileIcon,
   AtSymbolIcon,
+  LockClosedIcon,
+  EyeIcon,
+  EyeSlashIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 import { authApi } from "../lib/api";
@@ -18,8 +21,12 @@ export default function SignUpScreen() {
     fullName: "",
     mobileNumber: "",
     email: "",
+    password: "",
+    confirmPassword: "",
   });
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,7 +37,7 @@ export default function SignUpScreen() {
     }));
   };
 
-  const handleInitiateSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
@@ -46,46 +53,38 @@ export default function SignUpScreen() {
       setErrorMessage("Please enter your email address");
       return;
     }
+    if (!formData.password || formData.password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMessage("Password and confirm password do not match");
+      return;
+    }
 
-    setIsSendingOtp(true);
+    setIsSubmitting(true);
     try {
-      const res = await authApi.sendOtp({
-        email: formData.email.trim(),
-        phone: formData.mobileNumber.trim(),
+      const res = await authApi.signup({
         fullName: formData.fullName.trim(),
-        type: "signup",
-        channel: "email",
+        email: formData.email.trim(),
+        mobileNumber: formData.mobileNumber.trim(),
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
       });
 
-      if (!res.success && res.message && !res.message.includes("placeholder")) {
-        setErrorMessage(res.message);
-        setIsSendingOtp(false);
+      if (!res.success) {
+        setErrorMessage(res.message || "Failed to create account. Please try again.");
+        setIsSubmitting(false);
         return;
       }
 
-      // Navigate to dedicated separate OTP page with email target
-      router.push(
-        `/verify-otp?type=signup&target=${encodeURIComponent(
-          formData.email.trim()
-        )}&email=${encodeURIComponent(
-          formData.email.trim()
-        )}&phone=${encodeURIComponent(
-          formData.mobileNumber.trim()
-        )}&name=${encodeURIComponent(formData.fullName.trim())}&channel=email`
-      );
+      // Successful registration: Redirect to Student Login screen with email prefilled
+      router.push(`/login?registered=true&email=${encodeURIComponent(formData.email.trim())}`);
     } catch (err: any) {
-      console.warn("SignUp send OTP fallback:", err);
-      router.push(
-        `/verify-otp?type=signup&target=${encodeURIComponent(
-          formData.email.trim()
-        )}&email=${encodeURIComponent(
-          formData.email.trim()
-        )}&phone=${encodeURIComponent(
-          formData.mobileNumber.trim()
-        )}&name=${encodeURIComponent(formData.fullName.trim())}&channel=email`
-      );
+      console.error("SignUp error:", err);
+      setErrorMessage(err.message || "An unexpected error occurred. Please try again.");
     } finally {
-      setIsSendingOtp(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -99,21 +98,23 @@ export default function SignUpScreen() {
         
         {/* Brand Logo */}
         <div className="flex justify-center mb-4">
-          <Image
-            src="/assets/images/logo.png"
-            alt="Maatram Foundation"
-            width={160}
-            height={80}
-            priority
-            className="h-14 w-auto object-contain"
-          />
+          <Link href="/" className="group transition-transform active:scale-95 cursor-pointer focus:outline-none">
+            <Image
+              src="/assets/images/logo.png"
+              alt="Maatram Foundation"
+              width={160}
+              height={80}
+              priority
+              className="h-14 w-auto object-contain transition-opacity group-hover:opacity-90"
+            />
+          </Link>
         </div>
 
         <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight text-center">
           Student Registration
         </h1>
         <p className="font-primary text-xs sm:text-sm text-slate-600 leading-relaxed mt-1.5 text-center">
-          Enter your basic details to register. You will receive a 6-digit verification code directly in your email. No password needed!
+          Create your student account to apply for higher education scholarships.
         </p>
 
         {errorMessage && (
@@ -122,7 +123,7 @@ export default function SignUpScreen() {
           </div>
         )}
 
-        <form onSubmit={handleInitiateSignUp} className="mt-5 space-y-4">
+        <form onSubmit={handleSignUp} className="mt-5 space-y-4" autoComplete="off">
           {/* Field 1: Full Name */}
           <div>
             <label className="block text-xs font-heading font-bold text-slate-800 tracking-wide">
@@ -163,9 +164,6 @@ export default function SignUpScreen() {
                 className="w-full bg-slate-50/70 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-[#F7BC0F] focus:bg-white focus:ring-2 focus:ring-[#F7BC0F]/40 transition font-primary"
               />
             </div>
-            <p className="font-primary text-[11px] text-slate-500 mt-1">
-              Used for official application correspondence and interview calls.
-            </p>
           </div>
 
           {/* Field 3: Email Address */}
@@ -187,18 +185,75 @@ export default function SignUpScreen() {
                 className="w-full bg-slate-50/70 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-[#F7BC0F] focus:bg-white focus:ring-2 focus:ring-[#F7BC0F]/40 transition font-primary"
               />
             </div>
-            <p className="font-primary text-[11px] text-slate-500 mt-1">
-              We will send the 6-digit verification OTP to this email address.
-            </p>
+          </div>
+
+          {/* Field 4: Password */}
+          <div>
+            <label className="block text-xs font-heading font-bold text-slate-800 tracking-wide">
+              Create Password
+            </label>
+            <div className="relative mt-1.5">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <LockClosedIcon className="w-4 h-4 text-slate-400" />
+              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={6}
+                placeholder="At least 6 characters"
+                className="w-full bg-slate-50/70 border border-slate-200 rounded-xl pl-10 pr-10 py-3 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-[#F7BC0F] focus:bg-white focus:ring-2 focus:ring-[#F7BC0F]/40 transition font-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Field 5: Confirm Password */}
+          <div>
+            <label className="block text-xs font-heading font-bold text-slate-800 tracking-wide">
+              Confirm Password
+            </label>
+            <div className="relative mt-1.5">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <LockClosedIcon className="w-4 h-4 text-slate-400" />
+              </div>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                minLength={6}
+                placeholder="Re-enter password"
+                className="w-full bg-slate-50/70 border border-slate-200 rounded-xl pl-10 pr-10 py-3 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-[#F7BC0F] focus:bg-white focus:ring-2 focus:ring-[#F7BC0F]/40 transition font-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                title={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSendingOtp}
+            disabled={isSubmitting}
             className="w-full bg-[#F7BC0F] hover:bg-[#e5ad0c] active:scale-[0.99] text-slate-950 font-heading font-black text-sm sm:text-base py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-[#F7BC0F]/30 hover:shadow-lg hover:shadow-[#F7BC0F]/40 transition-all duration-200 cursor-pointer mt-5 border border-[#e5ad0c] disabled:opacity-70"
           >
-            <span>{isSendingOtp ? "Proceeding to Verification..." : "Verify & Continue"}</span>
+            <span>{isSubmitting ? "Creating Account..." : "Create Account"}</span>
             <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
           </button>
 
@@ -208,7 +263,7 @@ export default function SignUpScreen() {
               Already have an account?{" "}
             </span>
             <Link
-              href="/"
+              href="/login"
               className="font-primary text-xs font-bold text-slate-900 hover:text-[#F7BC0F] hover:underline transition"
             >
               Sign In

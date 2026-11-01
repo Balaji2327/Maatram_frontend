@@ -60,10 +60,10 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request Interceptor: Attach Bearer JWT Token automatically
+// Request Interceptor: Attach Bearer JWT Token automatically (student auth or admin token)
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = getAuthToken();
+    const token = getAuthToken() || getAdminToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -114,6 +114,31 @@ async function callApi<T = any>(
 
 // Auth API Endpoints (Powered by Axios)
 export const authApi = {
+  // Student Registration with Password (No OTP)
+  signup: async (payload: {
+    fullName: string;
+    email: string;
+    mobileNumber: string;
+    password: string;
+    confirmPassword: string;
+  }): Promise<ApiResponse> => {
+    return callApi(() => apiClient.post("/auth/signup", payload));
+  },
+
+  // Student Login with Email and Password (No OTP)
+  login: async (payload: {
+    email?: string;
+    identifier?: string;
+    password: string;
+  }): Promise<ApiResponse> => {
+    const result = await callApi(() => apiClient.post("/auth/login", payload));
+    if (result.success && result.session?.access_token) {
+      setAuthToken(result.session.access_token);
+      if (result.user) saveUser(result.user);
+    }
+    return result;
+  },
+
   // Send OTP to Phone (SMS) or Email via Supabase Auth
   sendOtp: async (payload: {
     phone?: string;
@@ -192,6 +217,16 @@ export function setAdminToken(token: string) {
   }
 }
 
+export function getStoredAdminUser(): any | null {
+  if (typeof window === "undefined") return null;
+  const user = localStorage.getItem("maatram_admin_user");
+  try {
+    return user ? JSON.parse(user) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function clearAdminToken() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("maatram_admin_token");
@@ -201,7 +236,7 @@ export function clearAdminToken() {
 
 // Admin Management API Endpoints
 export const adminApi = {
-  login: async (credentials: { email: string; password: string }): Promise<ApiResponse> => {
+  login: async (credentials: { email: string; password: string; otp?: string }): Promise<ApiResponse> => {
     const res = await callApi(() => apiClient.post("/admin/login", credentials));
     if (res.success && res.adminToken) {
       setAdminToken(res.adminToken);
@@ -210,6 +245,46 @@ export const adminApi = {
       }
     }
     return res;
+  },
+
+  getProfile: async (): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get("/admin/profile"));
+  },
+
+  changePassword: async (passwords: { currentPassword: string; newPassword: string }): Promise<ApiResponse> => {
+    return callApi(() => apiClient.post("/admin/change-password", passwords));
+  },
+
+  changeEmail: async (payload: { newEmail: string }): Promise<ApiResponse> => {
+    const res = await callApi(() => apiClient.post("/admin/change-email", payload));
+    if (res.success && res.adminToken) {
+      setAdminToken(res.adminToken);
+      if (typeof window !== "undefined" && res.user) {
+        localStorage.setItem("maatram_admin_user", JSON.stringify(res.user));
+      }
+    }
+    return res;
+  },
+
+  toggle2FA: async (payload: { enable: boolean; verificationCode?: string }): Promise<ApiResponse> => {
+    return callApi(() => apiClient.post("/admin/toggle-2fa", payload));
+  },
+
+  getAdministrators: async (): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get("/admin/administrators"));
+  },
+
+  addAdministrator: async (adminData: {
+    name: string;
+    email: string;
+    password: string;
+    role: string;
+  }): Promise<ApiResponse> => {
+    return callApi(() => apiClient.post("/admin/administrators", adminData));
+  },
+
+  deleteAdministrator: async (id: string): Promise<ApiResponse> => {
+    return callApi(() => apiClient.delete(`/admin/administrators/${id}`));
   },
 
   getApplications: async (params?: {
@@ -253,7 +328,42 @@ export const adminApi = {
     return callApi(() => apiClient.delete(`/admin/applications/${id}`));
   },
 
+  // Posts API
+  getPosts: async (): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get("/admin/posts"));
+  },
+
+  createPost: async (postData: any): Promise<ApiResponse> => {
+    return callApi(() => apiClient.post("/admin/posts", postData));
+  },
+
+  updatePost: async (id: string, postData: any): Promise<ApiResponse> => {
+    return callApi(() => apiClient.put(`/admin/posts/${id}`, postData));
+  },
+
+  deletePost: async (id: string): Promise<ApiResponse> => {
+    return callApi(() => apiClient.delete(`/admin/posts/${id}`));
+  },
+
+  // Events API
+  getEvents: async (): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get("/admin/events"));
+  },
+
+  createEvent: async (eventData: any): Promise<ApiResponse> => {
+    return callApi(() => apiClient.post("/admin/events", eventData));
+  },
+
+  updateEvent: async (id: string, eventData: any): Promise<ApiResponse> => {
+    return callApi(() => apiClient.put(`/admin/events/${id}`, eventData));
+  },
+
+  deleteEvent: async (id: string): Promise<ApiResponse> => {
+    return callApi(() => apiClient.delete(`/admin/events/${id}`));
+  },
+
   logout: () => {
     clearAdminToken();
   },
 };
+

@@ -15,9 +15,10 @@ import {
   ArrowUpTrayIcon,
   FunnelIcon,
 } from "@heroicons/react/24/outline";
-import { getAdminToken } from "../../lib/api";
+import { getAdminToken, adminApi } from "../../lib/api";
 import AdminSidebar from "../../components/AdminSidebar";
 import SignOutModal from "../../components/SignOutModal";
+import DeleteConfirmModal from "../../components/DeleteConfirmModal";
 import EventCard, { EventCardData } from "../../components/EventCard";
 
 export default function AdminEventsScreen() {
@@ -25,65 +26,50 @@ export default function AdminEventsScreen() {
   const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+
+  // Delete Confirmation Modal State
+  const [eventToDelete, setEventToDelete] = useState<EventCardData | null>(null);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+
+  // Events list state
+  const [eventsList, setEventsList] = useState<EventCardData[]>([]);
+
+  // Fetch events from database
+  const fetchEvents = async () => {
+    try {
+      setIsLoadingEvents(true);
+      const res = await adminApi.getEvents();
+      if (res.success && Array.isArray(res.data)) {
+        const formatted: EventCardData[] = res.data.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          date: item.event_date || item.date,
+          time: item.event_time || item.time || "",
+          location: item.location,
+          category: item.category || "Workshop",
+          targetAudience: item.target_audience || item.targetAudience || "",
+          imageUrl: item.image_url || item.imageUrl || "",
+          status: item.status || "upcoming",
+        }));
+        setEventsList(formatted);
+      }
+    } catch (err) {
+      console.error("Failed to fetch events from database:", err);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
 
   useEffect(() => {
     const token = getAdminToken();
     if (!token) {
       router.replace("/admin/login");
+    } else {
+      fetchEvents();
     }
   }, [router]);
-
-  // Events list state
-  const [eventsList, setEventsList] = useState<EventCardData[]>([
-    {
-      id: "ev-1",
-      title: "Maatram Annual Scholars Orientation 2026",
-      description: "Welcome gathering, mentor introductions, laptop distribution guidelines, and academic roadmap for newly selected scholarship recipients.",
-      date: "Nov 15, 2026",
-      time: "09:30 AM - 01:30 PM",
-      location: "Kamaraj Arangam, Chennai",
-      category: "Orientation",
-      targetAudience: "New 1st Year Scholars & Parents",
-      imageUrl: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&q=80&w=800",
-      status: "upcoming",
-    },
-    {
-      id: "ev-2",
-      title: "Full-Stack Web Development Bootcamp",
-      description: "Hands-on engineering workshop on Next.js, Node.js, and cloud deployments led by senior alumni software engineers.",
-      date: "Nov 22, 2026",
-      time: "10:00 AM - 04:00 PM",
-      location: "Virtual (Google Meet)",
-      category: "Workshop",
-      targetAudience: "2nd & 3rd Year Engineering Scholars",
-      imageUrl: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800",
-      status: "upcoming",
-    },
-    {
-      id: "ev-3",
-      title: "Maatram Alumni Annual Meet 2026",
-      description: "Reconnecting graduates from across Tamil Nadu to celebrate career milestones and expand foundation mentoring networks.",
-      date: "Dec 05, 2026",
-      time: "04:00 PM - 08:30 PM",
-      location: "PSG Tech Convention Hall, Coimbatore",
-      category: "Alumni Meet",
-      targetAudience: "All Maatram Alumni & Final Years",
-      imageUrl: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=800",
-      status: "upcoming",
-    },
-    {
-      id: "ev-4",
-      title: "Mock Interview & Aptitude Masterclass",
-      description: "One-on-one resume reviews, HR mock interview panels, and company placement preparation drills by corporate volunteers.",
-      date: "Dec 18, 2026",
-      time: "09:00 AM - 01:00 PM",
-      location: "Anna University Campus, Chennai",
-      category: "Career Prep",
-      targetAudience: "Final Year Graduating Scholars",
-      imageUrl: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=800",
-      status: "upcoming",
-    },
-  ]);
 
   // Create / Edit Event Modal State
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -158,7 +144,7 @@ export default function AdminEventsScreen() {
     setIsEventModalOpen(true);
   };
 
-  const handleSaveEvent = (e: React.FormEvent) => {
+  const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventTitle.trim()) {
       setFormError("Event title is required");
@@ -173,53 +159,66 @@ export default function AdminEventsScreen() {
       return;
     }
 
-    if (editingEventId) {
-      // Update existing event
-      setEventsList((prev) =>
-        prev.map((ev) =>
-          ev.id === editingEventId
-            ? {
-              ...ev,
-              title: eventTitle.trim(),
-              description: eventDescription.trim(),
-              date: eventDate.trim(),
-              time: eventTime.trim(),
-              location: eventLocation.trim(),
-              category: eventCategory,
-              targetAudience: eventTargetAudience.trim(),
-              imageUrl: eventImageUrl,
-              status: eventStatus,
-            }
-            : ev
-        )
-      );
-    } else {
-      // Create new event
-      const newEvent: EventCardData = {
-        id: `ev-${Date.now()}`,
-        title: eventTitle.trim(),
-        description: eventDescription.trim(),
-        date: eventDate.trim(),
-        time: eventTime.trim(),
-        location: eventLocation.trim(),
-        category: eventCategory,
-        targetAudience: eventTargetAudience.trim(),
-        imageUrl: eventImageUrl,
-        status: eventStatus,
-      };
-      setEventsList((prev) => [newEvent, ...prev]);
-    }
+    const payload = {
+      title: eventTitle.trim(),
+      description: eventDescription.trim(),
+      date: eventDate.trim(),
+      time: eventTime.trim(),
+      location: eventLocation.trim(),
+      category: eventCategory,
+      targetAudience: eventTargetAudience.trim(),
+      imageUrl: eventImageUrl,
+      status: eventStatus,
+    };
 
-    setIsEventModalOpen(false);
-    resetForm();
+    try {
+      if (editingEventId) {
+        // Update existing event in database
+        const res = await adminApi.updateEvent(editingEventId, payload);
+        if (res.success) {
+          await fetchEvents();
+        } else {
+          setFormError(res.message || "Failed to update event in database");
+          return;
+        }
+      } else {
+        // Create new event in database
+        const res = await adminApi.createEvent(payload);
+        if (res.success) {
+          await fetchEvents();
+        } else {
+          setFormError(res.message || "Failed to create event in database");
+          return;
+        }
+      }
+
+      setIsEventModalOpen(false);
+      resetForm();
+    } catch (err: any) {
+      setFormError("Error saving event: " + (err.message || "Server error"));
+    }
   };
 
+  // Trigger Delete Confirmation Modal
   const handleDeleteEvent = (event: EventCardData) => {
-    if (confirm(`Are you sure you want to delete event "${event.title}"?`)) {
-      setEventsList((prev) => prev.filter((ev) => ev.id !== event.id));
-      if (selectedEvent?.id === event.id) {
+    setEventToDelete(event);
+  };
+
+  // Perform event deletion after user confirms in the modal
+  const handleConfirmDeleteEvent = async () => {
+    if (!eventToDelete) return;
+    setIsDeletingEvent(true);
+    try {
+      await adminApi.deleteEvent(eventToDelete.id);
+      setEventsList((prev) => prev.filter((ev) => ev.id !== eventToDelete.id));
+      if (selectedEvent?.id === eventToDelete.id) {
         setSelectedEvent(null);
       }
+      setEventToDelete(null);
+    } catch (err: any) {
+      alert("Failed to delete event: " + (err.message || "Server error"));
+    } finally {
+      setIsDeletingEvent(false);
     }
   };
 
@@ -666,6 +665,18 @@ export default function AdminEventsScreen() {
           </div>
         </div>
       )}
+
+      {/* Delete Event Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!eventToDelete}
+        onClose={() => setEventToDelete(null)}
+        onConfirm={handleConfirmDeleteEvent}
+        title="Delete Event"
+        itemName={eventToDelete?.title}
+        description="Are you sure you want to delete this event? It will be permanently removed from the database and its banner image will be deleted from your AWS S3 bucket."
+        confirmButtonText="Delete Event"
+        isDeleting={isDeletingEvent}
+      />
 
       {/* Sign Out Modal */}
       <SignOutModal

@@ -110,12 +110,12 @@ export default function AdminSidebar({
       href: "/admin/posts",
       icon: ChatBubbleLeftRightIcon,
     },
-    {
-      id: "colleges" as AdminTab,
-      label: "COLLEGES",
-      href: "/admin/colleges",
-      icon: BuildingLibraryIcon,
-    },
+    // {
+    //   id: "colleges" as AdminTab,
+    //   label: "COLLEGES",
+    //   href: "/admin/colleges",
+    //   icon: BuildingLibraryIcon,
+    // },
   ];
 
   return (

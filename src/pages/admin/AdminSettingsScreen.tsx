@@ -16,7 +16,7 @@ import {
   QrCodeIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
-import { adminApi, getAdminToken } from "../../lib/api";
+import { adminApi, getAdminToken, getStoredAdminUser } from "../../lib/api";
 import AdminSidebar from "../../components/AdminSidebar";
 import SignOutModal from "../../components/SignOutModal";
 
@@ -43,8 +43,13 @@ export default function AdminSettingsScreen() {
   // Sign out modal state
   const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
 
+  // Client mount state to guarantee zero hydration mismatch between SSR & client
+  const [isMounted, setIsMounted] = useState(false);
+
   // Admin account info
-  const [adminEmail, setAdminEmail] = useState("admin@maatramedu.org");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminRole, setAdminRole] = useState("admin");
+  const [twoFactorSecret, setTwoFactorSecret] = useState("MAAT-RAM2-5SEC-UR99");
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmailInput, setNewEmailInput] = useState("");
   const [emailUpdateSuccess, setEmailUpdateSuccess] = useState("");
@@ -60,20 +65,9 @@ export default function AdminSettingsScreen() {
   const [passwordError, setPasswordError] = useState("");
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("maatram_admin_user");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed?.email) setAdminEmail(parsed.email);
-        }
-      } catch { }
-    }
-  }, []);
-
   // Administrators list state
   const [adminList, setAdminList] = useState<AdminUser[]>([]);
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState(false);
 
   // Form states for "Add New Admin"
   const [newAdminName, setNewAdminName] = useState("");
@@ -89,8 +83,70 @@ export default function AdminSettingsScreen() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [twoFaSuccessMsg, setTwoFaSuccessMsg] = useState("");
+  const [twoFaErrorMsg, setTwoFaErrorMsg] = useState("");
+  const [isToggling2FA, setIsToggling2FA] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
 
-  const handleAddAdmin = (e: React.FormEvent) => {
+  // Load current admin profile & active administrators from backend API
+  const fetchSettingsData = async () => {
+    try {
+      setIsLoadingAdmins(true);
+      const profRes = await adminApi.getProfile();
+
+      if (profRes.success && profRes.data) {
+        const email = profRes.data.email || "";
+        setAdminEmail(email);
+        setAdminRole(profRes.data.role || "admin");
+        setIs2FAEnabled(!!profRes.data.twoFactorEnabled);
+        if (profRes.data.twoFactorSecret) {
+          setTwoFactorSecret(profRes.data.twoFactorSecret);
+        }
+        if (profRes.data.qrCodeUrl) {
+          setQrCodeUrl(profRes.data.qrCodeUrl);
+        }
+
+        // Only fetch administrators if the current user is admin@maatram.com
+        if (email.toLowerCase() === "admin@maatram.com") {
+          try {
+            const adminsRes = await adminApi.getAdministrators();
+            if (adminsRes.success && Array.isArray(adminsRes.data)) {
+              const formatted: AdminUser[] = adminsRes.data.map((item: any) => ({
+                id: item.id,
+                name: item.name,
+                email: item.email,
+                role: item.role,
+                twoFactorEnabled: !!item.two_factor_enabled || !!item.twoFactorEnabled,
+                createdAt: item.created_at ? item.created_at.split("T")[0] : "Recent",
+              }));
+              setAdminList(formatted);
+            }
+          } catch (admErr) {
+            console.error("Failed to load admin list:", admErr);
+          }
+        } else {
+          setAdminList([]);
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to load settings data from database:", err);
+    } finally {
+      setIsLoadingAdmins(false);
+    }
+  };
+
+  useEffect(() => {
+    setIsMounted(true);
+    const stored = getStoredAdminUser();
+    if (stored?.email) {
+      setAdminEmail(stored.email);
+    }
+    if (stored?.role) {
+      setAdminRole(stored.role);
+    }
+    fetchSettingsData();
+  }, []);
+
+  const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminSuccessMsg("");
     setAdminErrorMsg("");
@@ -101,54 +157,95 @@ export default function AdminSettingsScreen() {
     }
 
     setIsSubmittingAdmin(true);
-
-    // Simulate creation
-    setTimeout(() => {
-      const created: AdminUser = {
-        id: Date.now().toString(),
+    try {
+      const res = await adminApi.addAdministrator({
         name: newAdminName.trim(),
         email: newAdminEmail.trim(),
+        password: newAdminPassword.trim(),
         role: newAdminRole,
-        twoFactorEnabled: false,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
+      });
 
-      setAdminList((prev) => [created, ...prev]);
-      setAdminSuccessMsg(`New admin "${newAdminName}" has been successfully added.`);
+      if (!res.success) {
+        setAdminErrorMsg(res.message || "Failed to add administrator.");
+        setIsSubmittingAdmin(false);
+        return;
+      }
+
+      setAdminSuccessMsg(res.message || `New admin "${newAdminName}" has been successfully added.`);
       setNewAdminName("");
       setNewAdminEmail("");
       setNewAdminPassword("");
       setNewAdminRole("admin");
-      setIsSubmittingAdmin(false);
 
+      // Refresh database administrator list
+      await fetchSettingsData();
       setTimeout(() => setAdminSuccessMsg(""), 5000);
-    }, 600);
+    } catch (err: any) {
+      setAdminErrorMsg(err.message || "Server error adding administrator.");
+    } finally {
+      setIsSubmittingAdmin(false);
+    }
   };
 
-  const handleToggle2FA = () => {
+  const handleToggle2FA = async () => {
+    setTwoFaSuccessMsg("");
+    setTwoFaErrorMsg("");
+
     if (!is2FAEnabled) {
       setShowQrModal(true);
     } else {
-      setIs2FAEnabled(false);
-      setTwoFaSuccessMsg("Two-Factor Authentication has been disabled for your portal account.");
-      setTimeout(() => setTwoFaSuccessMsg(""), 4000);
+      if (!confirm("Are you sure you want to disable Two-Factor Authentication?")) {
+        return;
+      }
+      setIsToggling2FA(true);
+      try {
+        const res = await adminApi.toggle2FA({ enable: false });
+        if (res.success) {
+          setIs2FAEnabled(false);
+          setTwoFaSuccessMsg("Two-Factor Authentication has been disabled for your portal account.");
+          setTimeout(() => setTwoFaSuccessMsg(""), 4000);
+        } else {
+          setTwoFaErrorMsg(res.message || "Failed to disable 2FA.");
+        }
+      } catch (err: any) {
+        setTwoFaErrorMsg(err.message || "Error disabling 2FA.");
+      } finally {
+        setIsToggling2FA(false);
+      }
     }
   };
 
-  const handleConfirm2FA = (e: React.FormEvent) => {
+  const handleConfirm2FA = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (verificationCode.length !== 6) {
+    if (verificationCode.trim().length !== 6) {
       alert("Please enter a valid 6-digit verification code.");
       return;
     }
-    setIs2FAEnabled(true);
-    setShowQrModal(false);
-    setVerificationCode("");
-    setTwoFaSuccessMsg("Two-Factor Authentication is now active and protecting your portal.");
-    setTimeout(() => setTwoFaSuccessMsg(""), 5000);
+
+    setIsToggling2FA(true);
+    try {
+      const res = await adminApi.toggle2FA({
+        enable: true,
+        verificationCode: verificationCode.trim(),
+      });
+
+      if (res.success) {
+        setIs2FAEnabled(true);
+        setShowQrModal(false);
+        setVerificationCode("");
+        setTwoFaSuccessMsg("Two-Factor Authentication is now active and protecting your portal.");
+        setTimeout(() => setTwoFaSuccessMsg(""), 5000);
+      } else {
+        alert(res.message || "Verification failed. Please check the code.");
+      }
+    } catch (err: any) {
+      alert(err.message || "Error enabling Two-Factor Authentication.");
+    } finally {
+      setIsToggling2FA(false);
+    }
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordMsg("");
     setPasswordError("");
@@ -169,9 +266,19 @@ export default function AdminSettingsScreen() {
     }
 
     setIsSavingPassword(true);
-    setTimeout(() => {
-      setIsSavingPassword(false);
-      setPasswordMsg("Password updated successfully.");
+    try {
+      const res = await adminApi.changePassword({
+        currentPassword: currentPassword.trim(),
+        newPassword: newPassword.trim(),
+      });
+
+      if (!res.success) {
+        setPasswordError(res.message || "Failed to update password.");
+        setIsSavingPassword(false);
+        return;
+      }
+
+      setPasswordMsg(res.message || "Password updated successfully in database.");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -179,10 +286,14 @@ export default function AdminSettingsScreen() {
         setShowPasswordModal(false);
         setPasswordMsg("");
       }, 1500);
-    }, 600);
+    } catch (err: any) {
+      setPasswordError(err.message || "Server error updating password.");
+    } finally {
+      setIsSavingPassword(false);
+    }
   };
 
-  const handleSaveEmail = (e: React.FormEvent) => {
+  const handleSaveEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmailError("");
     const trimmed = newEmailInput.trim();
@@ -196,24 +307,45 @@ export default function AdminSettingsScreen() {
     }
 
     setIsSavingEmail(true);
-    setTimeout(() => {
-      setAdminEmail(trimmed);
-      if (typeof window !== "undefined") {
-        try {
-          const stored = localStorage.getItem("maatram_admin_user");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            parsed.email = trimmed;
-            localStorage.setItem("maatram_admin_user", JSON.stringify(parsed));
-          }
-        } catch { }
+    try {
+      const res = await adminApi.changeEmail({ newEmail: trimmed });
+      if (!res.success) {
+        setEmailError(res.message || "Failed to update email address.");
+        setIsSavingEmail(false);
+        return;
       }
-      setIsSavingEmail(false);
+
+      setAdminEmail(trimmed);
       setShowEmailModal(false);
       setNewEmailInput("");
-      setEmailUpdateSuccess("Login email updated successfully.");
+      setEmailUpdateSuccess("Login email updated successfully in database.");
+      await fetchSettingsData();
       setTimeout(() => setEmailUpdateSuccess(""), 4000);
-    }, 500);
+    } catch (err: any) {
+      setEmailError(err.message || "Server error updating email.");
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
+
+  const handleRevokeAdmin = async (adminId: string, adminName: string) => {
+    if (!confirm(`Are you sure you want to revoke administrator access for ${adminName}?`)) {
+      return;
+    }
+
+    try {
+      const res = await adminApi.deleteAdministrator(adminId);
+      if (!res.success) {
+        alert(res.message || "Failed to revoke administrator.");
+        return;
+      }
+
+      setAdminList((prev) => prev.filter((a) => a.id !== adminId));
+      setAdminSuccessMsg(`Administrator access for "${adminName}" has been revoked.`);
+      setTimeout(() => setAdminSuccessMsg(""), 4000);
+    } catch (err: any) {
+      alert(err.message || "Server error revoking administrator.");
+    }
   };
 
   return (
@@ -266,10 +398,6 @@ export default function AdminSettingsScreen() {
                   <div className="flex items-center gap-2.5">
                     <span className="font-mono font-bold text-xs sm:text-sm text-slate-900">
                       {adminEmail}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      Verified
                     </span>
                   </div>
                 </div>
@@ -388,198 +516,199 @@ export default function AdminSettingsScreen() {
             </div>
           </div>
 
-          {/* 3. SECTION: ADD NEW ADMINISTRATOR */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <div className="lg:col-span-4">
-              <h2 className="font-heading font-bold text-sm text-slate-900">
-                Add New Administrator
-              </h2>
-              <p className="font-primary text-xs text-slate-500 mt-1">
-                Grant dashboard access to new foundation staff, coordinators, or reviewers.
-              </p>
-            </div>
-
-            <div className="lg:col-span-8 bg-white border border-slate-200 rounded-3xl p-6 lg:p-7 shadow-xs space-y-5">
-              {adminSuccessMsg && (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
-                  {adminSuccessMsg}
-                </div>
-              )}
-
-              {adminErrorMsg && (
-                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold">
-                  {adminErrorMsg}
-                </div>
-              )}
-
-              <form onSubmit={handleAddAdmin} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Full Name */}
-                  <div>
-                    <label className="block text-xs font-heading font-bold text-slate-700 mb-1.5">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newAdminName}
-                      onChange={(e) => setNewAdminName(e.target.value)}
-                      placeholder="e.g. Ramesh Kumar"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#F7BC0F] focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
-                    />
-                  </div>
-
-                  {/* Email Address */}
-                  <div>
-                    <label className="block text-xs font-heading font-bold text-slate-700 mb-1.5">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={newAdminEmail}
-                      onChange={(e) => setNewAdminEmail(e.target.value)}
-                      placeholder="admin@maatramedu.org"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#F7BC0F] focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
-                    />
-                  </div>
-
-                  {/* Temporary Password */}
-                  <div>
-                    <label className="block text-xs font-heading font-bold text-slate-700 mb-1.5">
-                      Temporary Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={newAdminPassword}
-                      onChange={(e) => setNewAdminPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#F7BC0F] focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
-                    />
-                  </div>
-
-                  {/* Role */}
-                  <div>
-                    <label className="block text-xs font-heading font-bold text-slate-700 mb-1.5">
-                      Admin Role
-                    </label>
-                    <select
-                      value={newAdminRole}
-                      onChange={(e) => setNewAdminRole(e.target.value as any)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:border-[#F7BC0F] focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
-                    >
-                      <option value="admin">Admin (Full Access)</option>
-                      <option value="reviewer">Reviewer (View & Verify Only)</option>
-                      <option value="super_admin">Super Admin (All Privileges)</option>
-                    </select>
-                  </div>
+          {/* 3 & 4. SECTIONS: ADD NEW ADMINISTRATOR & ACTIVE ADMINISTRATORS (Accessible only to admin@maatram.com) */}
+          {isMounted && adminEmail.toLowerCase() === "admin@maatram.com" && (
+            <>
+              {/* 3. SECTION: ADD NEW ADMINISTRATOR */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-4">
+                  <h2 className="font-heading font-bold text-sm text-slate-900">
+                    Add New Administrator
+                  </h2>
+                  <p className="font-primary text-xs text-slate-500 mt-1">
+                    Grant dashboard access to new foundation staff, coordinators, or reviewers.
+                  </p>
                 </div>
 
-                <div className="flex items-center justify-end pt-3 border-t border-slate-100">
-                  <button
-                    type="submit"
-                    disabled={isSubmittingAdmin}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-heading font-bold text-slate-950 bg-[#F7BC0F] hover:bg-[#e5ad0c] rounded-xl transition cursor-pointer shadow-xs border border-[#e5ad0c]"
-                  >
-                    <span>{isSubmittingAdmin ? "Adding Admin..." : "Add Administrator"}</span>
-                  </button>
+                <div className="lg:col-span-8 bg-white border border-slate-200 rounded-3xl p-6 lg:p-7 shadow-xs space-y-5">
+                  {adminSuccessMsg && (
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                      {adminSuccessMsg}
+                    </div>
+                  )}
+
+                  {adminErrorMsg && (
+                    <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold">
+                      {adminErrorMsg}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAddAdmin} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Full Name */}
+                      <div>
+                        <label className="block text-xs font-heading font-bold text-slate-700 mb-1.5">
+                          Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newAdminName}
+                          onChange={(e) => setNewAdminName(e.target.value)}
+                          placeholder="e.g. Ramesh Kumar"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#F7BC0F] focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
+                        />
+                      </div>
+
+                      {/* Email Address */}
+                      <div>
+                        <label className="block text-xs font-heading font-bold text-slate-700 mb-1.5">
+                          Email Address <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={newAdminEmail}
+                          onChange={(e) => setNewAdminEmail(e.target.value)}
+                          placeholder="admin@maatramedu.org"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#F7BC0F] focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
+                        />
+                      </div>
+
+                      {/* Temporary Password */}
+                      <div>
+                        <label className="block text-xs font-heading font-bold text-slate-700 mb-1.5">
+                          Temporary Password <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          value={newAdminPassword}
+                          onChange={(e) => setNewAdminPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#F7BC0F] focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
+                        />
+                      </div>
+
+                      {/* Role */}
+                      <div>
+                        <label className="block text-xs font-heading font-bold text-slate-700 mb-1.5">
+                          Admin Role
+                        </label>
+                        <select
+                          value={newAdminRole}
+                          onChange={(e) => setNewAdminRole(e.target.value as any)}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:border-[#F7BC0F] focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
+                        >
+                          <option value="admin">Admin (Full Access)</option>
+                          <option value="reviewer">Reviewer (View & Verify Only)</option>
+                          <option value="super_admin">Super Admin (All Privileges)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end pt-3 border-t border-slate-100">
+                      <button
+                        type="submit"
+                        disabled={isSubmittingAdmin}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-heading font-bold text-slate-950 bg-[#F7BC0F] hover:bg-[#e5ad0c] rounded-xl transition cursor-pointer shadow-xs border border-[#e5ad0c]"
+                      >
+                        <span>{isSubmittingAdmin ? "Adding Admin..." : "Add Administrator"}</span>
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </form>
-            </div>
-          </div>
-
-          {/* 4. SECTION: ACTIVE ADMINISTRATORS */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <div className="lg:col-span-4">
-              <h2 className="font-heading font-bold text-sm text-slate-900">
-                Active Administrators
-              </h2>
-              <p className="font-primary text-xs text-slate-500 mt-1">
-                List of authorized admin accounts on the Maatram Portal.
-              </p>
-            </div>
-
-            <div className="lg:col-span-8 bg-white border border-slate-200 rounded-3xl p-6 lg:p-7 shadow-xs">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 font-heading text-[11px] uppercase tracking-wider bg-slate-50/70">
-                      <th className="py-3 px-4">Name</th>
-                      <th className="py-3 px-4">Email</th>
-                      <th className="py-3 px-4">Role</th>
-                      <th className="py-3 px-4">2FA Status</th>
-                      <th className="py-3 px-4">Date Added</th>
-                      <th className="py-3 px-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium">
-                    {adminList.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
-                          No administrators added yet. Use the form above to add a new administrator.
-                        </td>
-                      </tr>
-                    ) : (
-                      adminList.map((admin) => (
-                        <tr key={admin.id} className="hover:bg-amber-50/30 transition">
-                          <td className="py-3.5 px-4 font-bold text-slate-900">
-                            {admin.name}
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-600 font-mono text-[11px]">
-                            {admin.email}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${admin.role === "super_admin"
-                                ? "bg-purple-100 text-purple-800 border border-purple-200"
-                                : admin.role === "admin"
-                                  ? "bg-amber-100 text-amber-900 border border-amber-200"
-                                  : "bg-blue-100 text-blue-800 border border-blue-200"
-                                }`}
-                            >
-                              {admin.role.replace("_", " ")}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            {admin.twoFactorEnabled ? (
-                              <span className="text-emerald-700 font-semibold text-[11px]">
-                                Enabled
-                              </span>
-                            ) : (
-                              <span className="text-slate-400 font-semibold text-[11px]">
-                                Disabled
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">
-                            {admin.createdAt}
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            {admin.role !== "super_admin" ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (confirm(`Remove administrator access for ${admin.name}?`)) {
-                                    setAdminList((prev) => prev.filter((a) => a.id !== admin.id));
-                                  }
-                                }}
-                                className="text-red-600 hover:text-red-800 font-bold hover:underline cursor-pointer"
-                              >
-                                Revoke
-                              </button>
-                            ) : (
-                              <span className="text-slate-400 text-[11px]">Primary Owner</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
               </div>
-            </div>
-          </div>
+
+              {/* 4. SECTION: ACTIVE ADMINISTRATORS */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-4">
+                  <h2 className="font-heading font-bold text-sm text-slate-900">
+                    Active Administrators
+                  </h2>
+                  <p className="font-primary text-xs text-slate-500 mt-1">
+                    List of authorized admin accounts on the Maatram Portal.
+                  </p>
+                </div>
+
+                <div className="lg:col-span-8 bg-white border border-slate-200 rounded-3xl p-6 lg:p-7 shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-500 font-heading text-[11px] uppercase tracking-wider bg-slate-50/70">
+                          <th className="py-3 px-4">Name</th>
+                          <th className="py-3 px-4">Email</th>
+                          <th className="py-3 px-4">Role</th>
+                          <th className="py-3 px-4">2FA Status</th>
+                          <th className="py-3 px-4">Date Added</th>
+                          <th className="py-3 px-4 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium">
+                        {adminList.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                              No administrators added yet. Use the form above to add a new administrator.
+                            </td>
+                          </tr>
+                        ) : (
+                          adminList.map((admin) => (
+                            <tr key={admin.id} className="hover:bg-amber-50/30 transition">
+                              <td className="py-3.5 px-4 font-bold text-slate-900">
+                                {admin.name}
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-600 font-mono text-[11px]">
+                                {admin.email}
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${admin.role === "super_admin"
+                                    ? "bg-purple-100 text-purple-800 border border-purple-200"
+                                    : admin.role === "admin"
+                                      ? "bg-amber-100 text-amber-900 border border-amber-200"
+                                      : "bg-blue-100 text-blue-800 border border-blue-200"
+                                    }`}
+                                >
+                                  {admin.role.replace("_", " ")}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                {admin.twoFactorEnabled ? (
+                                  <span className="text-emerald-700 font-semibold text-[11px]">
+                                    Enabled
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 font-semibold text-[11px]">
+                                    Disabled
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">
+                                {admin.createdAt}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                {admin.role !== "super_admin" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRevokeAdmin(admin.id, admin.name)}
+                                    className="text-red-600 hover:text-red-800 font-bold hover:underline cursor-pointer"
+                                  >
+                                    Revoke
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-400 text-[11px]">Primary Owner</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </main>
       </div>
 
@@ -602,25 +731,24 @@ export default function AdminSettingsScreen() {
               Scan this QR code with Google Authenticator or Microsoft Authenticator, then enter the 6-digit code below.
             </p>
 
-            {/* QR Code Placeholder Graphic */}
+            {/* QR Code Graphic */}
             <div className="flex flex-col items-center justify-center p-6 bg-amber-50/50 rounded-2xl border-2 border-dashed border-amber-200">
-              <div className="w-36 h-36 bg-white rounded-2xl border border-slate-200 p-2 flex items-center justify-center shadow-xs">
-                {/* Visual simulated QR */}
-                <div className="grid grid-cols-6 gap-1 w-full h-full p-1 bg-slate-900 rounded-lg">
-                  <div className="bg-white col-span-2 row-span-2 rounded-xs" />
-                  <div className="bg-transparent col-span-2" />
-                  <div className="bg-white col-span-2 row-span-2 rounded-xs" />
-                  <div className="bg-white col-span-1" />
-                  <div className="bg-transparent col-span-1" />
-                  <div className="bg-transparent col-span-2" />
-                  <div className="bg-white col-span-2" />
-                  <div className="bg-white col-span-2 row-span-2 rounded-xs" />
-                  <div className="bg-white col-span-2" />
-                  <div className="bg-white col-span-2 row-span-2 rounded-xs" />
-                </div>
+              <div className="w-44 h-44 bg-white rounded-2xl border border-slate-200 p-2 flex items-center justify-center shadow-xs overflow-hidden">
+                {qrCodeUrl ? (
+                  <img
+                    src={qrCodeUrl}
+                    alt="Authenticator QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="text-center p-4">
+                    <QrCodeIcon className="w-12 h-12 text-amber-500 mx-auto mb-1 stroke-1" />
+                    <p className="text-[10px] text-slate-500 font-mono">Generating QR...</p>
+                  </div>
+                )}
               </div>
-              <p className="text-[11px] font-mono font-bold text-slate-600 mt-3 tracking-wider">
-                SECRET: MAAT-RAM2-5SEC-UR99
+              <p className="text-[11px] font-mono font-bold text-slate-700 mt-3 tracking-wider bg-white px-3 py-1 rounded-lg border border-slate-200 select-all">
+                KEY: {twoFactorSecret}
               </p>
             </div>
 

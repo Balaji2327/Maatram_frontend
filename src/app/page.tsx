@@ -1,5 +1,5 @@
-import LoginScreen from "../pages/LoginScreen";
+import AdminLoginScreen from "../pages/admin/AdminLoginScreen";
 
 export default function Home() {
-  return <LoginScreen />;
+  return <AdminLoginScreen />;
 }

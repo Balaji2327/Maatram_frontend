@@ -30,6 +30,8 @@ import {
   ChatBubbleLeftEllipsisIcon,
   TableCellsIcon,
   SparklesIcon,
+  CheckBadgeIcon,
+  ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import * as XLSX from "xlsx";
 import { adminApi, getAdminToken } from "../../lib/api";
@@ -210,56 +212,95 @@ export default function AdminApplicationsScreen() {
         "Status": a.status || "",
         "Volunteer Suggestion": a.volunteer_suggestion || "",
         "Volunteer Name": a.volunteer_name || "",
-        "Mobile Number": a.mobile_number || "",
-        "Alt Mobile Number": a.alt_mobile_number || "",
-        "Email ID": a.email || "",
-        "Gender": a.gender || "",
+        // A. Personal Information
         "Date of Birth": a.dob || "",
+        "Gender": a.gender || "",
         "Blood Group": a.blood_group || "",
+        "Mobile Number": a.mobile_number || "",
+        "WhatsApp Number": a.whatsappNumber || a.alt_mobile_number || "",
+        "Email ID": a.email || "",
         "Aadhaar Number": a.aadhaar_number || "",
-        "Address": a.address || "",
-        "District": a.district || "",
-        "Pincode": a.pincode || "",
+        "Community": a.community || "",
+        "Nationality": a.nationality || "Indian",
+        "Marital Status": a.maritalStatus || "Single",
+
+        // B. Family Information
         "Father Name": a.father_name || "",
         "Father Occupation": a.father_occupation || "",
-        "Father Income": a.father_income || "",
+        "Father Monthly Income": a.father_income || a.fatherMonthlyIncome || "",
+        "Father Employment Status": a.fatherEmploymentStatus || "",
         "Mother Name": a.mother_name || "",
         "Mother Occupation": a.mother_occupation || "",
-        "Mother Income": a.mother_income || "",
-        "Guardian Name": a.guardian_name || "",
-        "Guardian Occupation": a.guardian_occupation || "",
-        "Guardian Income": a.guardian_income || "",
-        "Family Annual Income": a.family_annual_income || a.annual_income || "",
-        "Housing Status": a.housing_status || "",
-        "First Graduate": a.first_graduate ? "Yes" : "No",
-        "Single Parent": a.single_parent ? "Yes" : "No",
-        "Orphan": a.orphan ? "Yes" : "No",
-        "Differently Abled": a.differently_abled ? "Yes" : "No",
-        "Siblings Count": Array.isArray(a.siblings) ? a.siblings.length : (a.siblings_count || 0),
+        "Mother Monthly Income": a.mother_income || a.motherMonthlyIncome || "",
+        "Mother Employment Status": a.motherEmploymentStatus || "",
+        "Total Annual Family Income": a.family_annual_income || a.annual_income || a.annualFamilyIncome || "",
+        "Family Members Count": a.familyMembersCount || a.family_members_count || "",
+        "Family Type": a.familyType || "Nuclear",
+        "Family Situation": a.familySituation || (a.orphan ? "Orphan" : a.single_parent ? "Single Parent" : "Both Parents"),
+        "Guardian Name": a.guardian_name || a.guardianName || "",
+        "Guardian Occupation": a.guardian_occupation || a.guardianOccupation || "",
+        "Guardian Monthly Income": a.guardian_income || a.guardianMonthlyIncome || "",
+        "Guardian Relation": a.guardianRelation || "",
+
+        // C. Siblings Information
+        "Siblings Count": a.siblingCount || (Array.isArray(a.siblings) ? a.siblings.length : (a.siblings_count || 0)),
+        "Siblings Currently Studying": a.siblingsStudyingCount || "",
         "Siblings Details": siblingsSummary,
-        "10th School": a.tenth_school_name || "",
-        "10th Board": a.tenth_board || "",
-        "10th Pass Year": a.tenth_pass_year || "",
-        "10th Percentage": a.tenth_percentage || "",
-        "11th School": a.eleventh_school_name || "",
-        "11th Board": a.eleventh_board || "",
-        "11th Pass Year": a.eleventh_pass_year || "",
-        "11th Percentage": a.eleventh_percentage || "",
-        "12th School": a.twelfth_school_name || "",
-        "12th Board": a.twelfth_board || "",
-        "12th Stream / Group": a.twelfth_group || a.twelfth_stream || "",
-        "12th Pass Year": a.twelfth_pass_year || "",
-        "12th Cutoff": a.twelfth_cutoff || "",
-        "12th Total Marks": a.twelfth_total_marks || "",
-        "12th Max Marks": a.twelfth_max_marks || "",
-        "12th Percentage": a.twelfth_percentage || "",
+
+        // D. Address Information
+        "Permanent Address": a.permanentAddress || a.address || "",
+        "Current Address": a.currentAddress || a.address || "",
+        "Village / Town": a.villageTown || "",
+        "District": a.district || "",
+        "State": a.state || "Tamil Nadu",
+        "Pincode": a.pincode || "",
+        "Residence Type": a.residenceType || a.housing_status || "Own",
+        "Distance to Nearest College": a.collegeDistance || "",
+
+        // E. Educational Information
+        "10th School": a.tenth_school_name || a.tenthSchool || "",
+        "10th Board": a.tenth_board || a.tenthBoard || "",
+        "10th Pass Year": a.tenth_pass_year || a.tenthYear || "",
+        "10th Percentage": a.tenth_percentage || a.tenthPercentage || "",
+        "10th Marks Obtained": a.tenth_marks_obtained || a.tenthTotalMarks || "",
+        "11th School": a.eleventh_school_name || a.eleventhSchool || "",
+        "11th Board": a.eleventh_board || a.eleventhBoard || "",
+        "11th Pass Year": a.eleventh_pass_year || a.eleventhYear || "",
+        "11th Percentage": a.eleventh_percentage || a.eleventhPercentage || "",
+        "12th School": a.twelfth_school_name || a.twelfthSchool || "",
+        "12th Board": a.twelfth_board || a.twelfthBoard || "",
+        "12th Group / Stream": a.twelfth_group || a.twelfth_stream || a.twelfthStream || "",
+        "12th Pass Year": a.twelfth_pass_year || a.twelfthYear || "",
+        "12th Cutoff": a.twelfth_cutoff || a.twelfthCutoff || "",
+        "12th Total Marks": a.twelfth_total_marks || a.twelfthTotalMarks || "",
+        "12th Max Marks": a.twelfth_max_marks || a.twelfthMaxMarks || "",
+        "12th Percentage": a.twelfth_percentage || a.twelfthPercentage || "",
         "12th Subject Marks": twelfthSubjectsSummary,
+        "First Generation Graduate": a.first_graduate ? "Yes" : "No",
         "Preferred Degree": a.preferred_degree || "",
-        "Preferred Branch": a.preferred_branch || (Array.isArray(a.preferred_courses) ? a.preferred_courses[0] : ""),
-        "All Preferred Courses": Array.isArray(a.preferred_courses) ? a.preferred_courses.join(", ") : "",
-        "Preferred Districts": Array.isArray(a.preferred_districts) ? a.preferred_districts.join(", ") : "",
+        "Preferred Course (1st)": a.preferred_branch || (Array.isArray(a.preferred_courses) ? a.preferred_courses[0] : ""),
+        "Preferred Course (2nd)": a.secondBranch || (Array.isArray(a.preferred_courses) ? a.preferred_courses[1] : ""),
+        "Preferred College Location": a.preferredCollegeLocation || (Array.isArray(a.preferred_districts) ? a.preferred_districts.join(", ") : ""),
+
+        // F. Financial Information
+        "Monthly Family Income": a.monthlyFamilyIncome || a.father_income || "",
+        "Income Sources": a.incomeSources || "",
+        "Family Debts": a.familyDebts || "",
+        "Existing Education Loans": a.educationLoans || "",
+        "Financial Difficulties Faced": a.financialDifficulties || "",
+        "Why Student Needs Financial Support": a.whyNeedSupport || "",
+        "Ability to Afford College Without Support": a.affordabilityWithoutSupport || "",
+
+        // G. Personal & Background Information
+        "Orphan Status": a.orphan ? "Yes" : "No",
+        "Single Parent Status": a.single_parent ? "Yes" : "No",
+        "First Generation Learner": a.first_graduate ? "Yes" : "No",
+        "Special Family Circumstances": a.specialCircumstances || "",
+        "Career Ambition": a.careerAmbition || a.career_aspiration || "",
+        "Why Wants Higher Education": a.higherEducationReason || "",
+        "Willing to Relocate in TN": a.willingToRelocateTN ? "Yes" : "No",
+        "Future Goals": a.futureGoals || "",
         "Hostel Required": a.hostel_required || a.need_hostel ? "Yes" : "No",
-        "Additional Remarks": a.additional_remarks || a.career_aspiration || "",
         "Submission Date": a.created_at ? new Date(a.created_at).toLocaleString() : "",
       };
     });
@@ -797,35 +838,56 @@ export default function AdminApplicationsScreen() {
                     onClick={() => document.getElementById("sec-personal")?.scrollIntoView({ behavior: "smooth" })}
                     className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#F7BC0F]/20 hover:text-slate-950 transition cursor-pointer whitespace-nowrap"
                   >
-                    1. Personal Details
+                    1. Personal
                   </button>
                   <button
                     type="button"
                     onClick={() => document.getElementById("sec-family")?.scrollIntoView({ behavior: "smooth" })}
                     className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#F7BC0F]/20 hover:text-slate-950 transition cursor-pointer whitespace-nowrap"
                   >
-                    2. Family & Income
+                    2. Family
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("sec-siblings")?.scrollIntoView({ behavior: "smooth" })}
+                    className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#F7BC0F]/20 hover:text-slate-950 transition cursor-pointer whitespace-nowrap"
+                  >
+                    3. Siblings
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("sec-address")?.scrollIntoView({ behavior: "smooth" })}
+                    className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#F7BC0F]/20 hover:text-slate-950 transition cursor-pointer whitespace-nowrap"
+                  >
+                    4. Address
                   </button>
                   <button
                     type="button"
                     onClick={() => document.getElementById("sec-academic")?.scrollIntoView({ behavior: "smooth" })}
                     className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#F7BC0F]/20 hover:text-slate-950 transition cursor-pointer whitespace-nowrap"
                   >
-                    3. Academic Marks (10th/11th/12th)
+                    5. Educational
                   </button>
                   <button
                     type="button"
-                    onClick={() => document.getElementById("sec-preferences")?.scrollIntoView({ behavior: "smooth" })}
+                    onClick={() => document.getElementById("sec-financial")?.scrollIntoView({ behavior: "smooth" })}
                     className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#F7BC0F]/20 hover:text-slate-950 transition cursor-pointer whitespace-nowrap"
                   >
-                    4. Preferences & Career
+                    6. Financial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("sec-background")?.scrollIntoView({ behavior: "smooth" })}
+                    className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#F7BC0F]/20 hover:text-slate-950 transition cursor-pointer whitespace-nowrap"
+                  >
+                    7. Background & Goals
                   </button>
                   <button
                     type="button"
                     onClick={() => document.getElementById("sec-documents")?.scrollIntoView({ behavior: "smooth" })}
                     className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#F7BC0F]/20 hover:text-slate-950 transition cursor-pointer whitespace-nowrap"
                   >
-                    5. Documents & Verification
+                    8. Documents
                   </button>
                 </div>
 
@@ -836,12 +898,12 @@ export default function AdminApplicationsScreen() {
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                       <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">1</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        Personal & Contact Information
+                        A. Personal Information
                       </h4>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Full Name</span>
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Student Full Name</span>
                         <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.full_name || "—"}</p>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
@@ -857,115 +919,168 @@ export default function AdminApplicationsScreen() {
                         <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.blood_group || "—"}</p>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Mobile Number</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.mobile_number || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">WhatsApp Number</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.whatsappNumber || selectedApplicant.alt_mobile_number || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Email Address</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5 truncate">{selectedApplicant.email || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
                         <span className="text-[10px] text-slate-500 uppercase font-bold">Aadhaar Number</span>
                         <p className="font-mono font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.aadhaar_number || "—"}</p>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Primary Mobile</span>
-                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.mobile_number || "—"}</p>
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Community / Category</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.community || "—"}</p>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Alternate Contact</span>
-                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.alt_mobile_number || "—"}</p>
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Nationality</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.nationality || "Indian"}</p>
                       </div>
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 sm:col-span-2">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Email Address</span>
-                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.email || "—"}</p>
-                      </div>
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 sm:col-span-3">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Permanent Address</span>
-                        <p className="font-semibold text-sm text-slate-900 mt-0.5">{selectedApplicant.address || "—"}</p>
-                        <p className="text-slate-600 mt-1">
-                          District: <span className="font-bold text-slate-900">{selectedApplicant.district || "—"}</span> • Pincode:{" "}
-                          <span className="font-mono font-bold text-slate-900">{selectedApplicant.pincode || "—"}</span>
-                        </p>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Marital Status</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.maritalStatus || "Single"}</p>
                       </div>
                     </div>
                   </section>
 
-                  {/* SECTION 2: FAMILY & SOCIO-ECONOMIC DETAILS */}
+                  {/* SECTION 2: FAMILY DETAILS */}
                   <section id="sec-family" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                       <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">2</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        Family & Socio-Economic Details
+                        B. Family Information
                       </h4>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Father Name</span>
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Father's Name</span>
                         <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.father_name || "—"}</p>
-                        <p className="text-slate-500 mt-1">Occupation: {selectedApplicant.father_occupation || "—"}</p>
+                        <p className="text-slate-500 text-[11px] mt-1">Occupation: {selectedApplicant.father_occupation || "—"}</p>
+                        <p className="text-slate-500 text-[11px]">Monthly Income: {selectedApplicant.father_income || selectedApplicant.fatherMonthlyIncome || "—"}</p>
+                        <p className="text-slate-500 text-[11px]">Status: {selectedApplicant.fatherEmploymentStatus || "—"}</p>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Mother Name</span>
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Mother's Name</span>
                         <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.mother_name || "—"}</p>
-                        <p className="text-slate-500 mt-1">Occupation: {selectedApplicant.mother_occupation || "—"}</p>
+                        <p className="text-slate-500 text-[11px] mt-1">Occupation: {selectedApplicant.mother_occupation || "—"}</p>
+                        <p className="text-slate-500 text-[11px]">Monthly Income: {selectedApplicant.mother_income || selectedApplicant.motherMonthlyIncome || "—"}</p>
+                        <p className="text-slate-500 text-[11px]">Status: {selectedApplicant.motherEmploymentStatus || "—"}</p>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Annual Family Income</span>
-                        <p className="font-bold text-sm text-emerald-800 mt-0.5">{selectedApplicant.family_annual_income || "—"}</p>
-                        <p className="text-slate-500 mt-1">Housing: {selectedApplicant.housing_status || "—"}</p>
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Total Family Income & Members</span>
+                        <p className="font-bold text-sm text-emerald-800 mt-0.5">{selectedApplicant.family_annual_income || selectedApplicant.annual_income || selectedApplicant.annualFamilyIncome || "—"}</p>
+                        <p className="text-slate-500 text-[11px] mt-1">Family Members: {selectedApplicant.familyMembersCount || selectedApplicant.family_members_count || "—"}</p>
+                        <p className="text-slate-500 text-[11px]">Family Type: {selectedApplicant.familyType || "Nuclear"}</p>
+                        <p className="text-slate-500 text-[11px]">Situation: {selectedApplicant.familySituation || (selectedApplicant.orphan ? "Orphan" : selectedApplicant.single_parent ? "Single Parent" : "Both Parents")}</p>
                       </div>
-                    </div>
-
-                    {/* Special Category Badges */}
-                    <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-200/80">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900">Applicant Category & Privilege Indicators</span>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${selectedApplicant.first_graduate ? "bg-amber-100 border-amber-300 text-amber-950" : "bg-white border-slate-200 text-slate-500"}`}>
-                          {selectedApplicant.first_graduate ? "✓ First Graduate in Family" : "Non-First Graduate"}
-                        </span>
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${selectedApplicant.single_parent ? "bg-purple-100 border-purple-300 text-purple-950" : "bg-white border-slate-200 text-slate-500"}`}>
-                          {selectedApplicant.single_parent ? "✓ Single Parent Child" : "Both Parents"}
-                        </span>
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${selectedApplicant.orphan ? "bg-rose-100 border-rose-300 text-rose-950" : "bg-white border-slate-200 text-slate-500"}`}>
-                          {selectedApplicant.orphan ? "✓ Orphan Student" : "Not Orphan"}
-                        </span>
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${selectedApplicant.differently_abled ? "bg-blue-100 border-blue-300 text-blue-950" : "bg-white border-slate-200 text-slate-500"}`}>
-                          {selectedApplicant.differently_abled ? "✓ Differently Abled Student" : "General Category"}
-                        </span>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Guardian Details (If Applicable)</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.guardian_name || selectedApplicant.guardianName || "—"}</p>
+                        <p className="text-slate-500 text-[11px] mt-1">Relation: {selectedApplicant.guardianRelation || "—"}</p>
+                        <p className="text-slate-500 text-[11px]">Occupation: {selectedApplicant.guardian_occupation || selectedApplicant.guardianOccupation || "—"}</p>
+                        <p className="text-slate-500 text-[11px]">Income: {selectedApplicant.guardian_income || selectedApplicant.guardianMonthlyIncome || "—"}</p>
                       </div>
-                    </div>
-
-                    {/* Siblings Table */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Siblings Details</span>
-                      {selectedApplicant.siblings && selectedApplicant.siblings.length > 0 ? (
-                        <table className="w-full mt-2 text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500">
-                              <th className="py-1.5">Name</th>
-                              <th className="py-1.5">Relationship</th>
-                              <th className="py-1.5">Age</th>
-                              <th className="py-1.5">Education</th>
-                              <th className="py-1.5">Institution</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-200/60">
-                            {selectedApplicant.siblings.map((s: any, i: number) => (
-                              <tr key={i}>
-                                <td className="py-1.5 font-bold">{s.name || "—"}</td>
-                                <td className="py-1.5">{s.relationship || "—"}</td>
-                                <td className="py-1.5">{s.age || "—"}</td>
-                                <td className="py-1.5">{s.education || "—"}</td>
-                                <td className="py-1.5">{s.institution || "—"}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      ) : (
-                        <p className="text-slate-400 mt-1 italic">No siblings recorded</p>
-                      )}
                     </div>
                   </section>
 
-                  {/* SECTION 3: ACADEMIC MARKS */}
-                  <section id="sec-academic" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  {/* SECTION 3: SIBLINGS DETAILS */}
+                  <section id="sec-siblings" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                       <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">3</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        Academic Records (10th, 11th & 12th Marks)
+                        C. Siblings Information
+                      </h4>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-xs mb-3">
+                      <div className="bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+                        <span className="text-slate-500">Number of Siblings: </span>
+                        <strong className="text-slate-900">{selectedApplicant.siblingCount || (Array.isArray(selectedApplicant.siblings) ? selectedApplicant.siblings.length : 0)}</strong>
+                      </div>
+                      <div className="bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+                        <span className="text-slate-500">Siblings Currently Studying: </span>
+                        <strong className="text-slate-900">{selectedApplicant.siblingsStudyingCount || "—"}</strong>
+                      </div>
+                    </div>
+                    {selectedApplicant.siblings && selectedApplicant.siblings.length > 0 ? (
+                      <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
+                        <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
+                          <tr>
+                            <th className="py-2.5 px-3">Name</th>
+                            <th className="py-2.5 px-3">Relationship</th>
+                            <th className="py-2.5 px-3">Age</th>
+                            <th className="py-2.5 px-3">Education / Occupation</th>
+                            <th className="py-2.5 px-3">School / Institution</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {selectedApplicant.siblings.map((s: any, i: number) => (
+                            <tr key={i} className="hover:bg-slate-50">
+                              <td className="py-2 px-3 font-bold text-slate-900">{s.name || "—"}</td>
+                              <td className="py-2 px-3 text-slate-600">{s.relationship || "—"}</td>
+                              <td className="py-2 px-3 text-slate-600">{s.age || "—"}</td>
+                              <td className="py-2 px-3 text-slate-600">{s.education || s.occupation || "—"}</td>
+                              <td className="py-2 px-3 text-slate-600">{s.institution || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-slate-200">No siblings recorded</p>
+                    )}
+                  </section>
+
+                  {/* SECTION 4: ADDRESS INFORMATION */}
+                  <section id="sec-address" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">4</span>
+                      <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
+                        D. Address & Residence Details
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 sm:col-span-2">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Permanent Address</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.permanentAddress || selectedApplicant.address || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 sm:col-span-2">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Current Residential Address</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.currentAddress || selectedApplicant.address || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Village / Town</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.villageTown || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">District & State</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.district || "—"}, {selectedApplicant.state || "Tamil Nadu"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">PIN Code</span>
+                        <p className="font-mono font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.pincode || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Residence Type</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.residenceType || selectedApplicant.housing_status || "Own"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Distance from Nearest College</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.collegeDistance || "—"}</p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* SECTION 5: EDUCATIONAL INFORMATION */}
+                  <section id="sec-academic" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">5</span>
+                      <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
+                        E. Educational Information (10th, 12th & Preferences)
                       </h4>
                     </div>
 
@@ -975,28 +1090,28 @@ export default function AdminApplicationsScreen() {
                         <span className="font-heading font-black text-sm text-amber-950">
                           12th Higher Secondary Marks (HSC)
                         </span>
-                        {selectedApplicant.twelfth_cutoff && (
+                        {(selectedApplicant.twelfth_cutoff || selectedApplicant.twelfthCutoff) && (
                           <span className="px-3 py-1 bg-[#F7BC0F] font-mono font-black text-sm text-slate-950 rounded-xl shadow-xs">
-                            Cutoff: {selectedApplicant.twelfth_cutoff} / 200
+                            Cutoff: {selectedApplicant.twelfth_cutoff || selectedApplicant.twelfthCutoff} / 200
                           </span>
                         )}
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs mt-3">
                         <div>
                           <span className="text-slate-500 block">School Name:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.twelfth_school_name || "—"}</p>
+                          <p className="font-bold text-slate-900">{selectedApplicant.twelfth_school_name || selectedApplicant.twelfthSchool || "—"}</p>
                         </div>
                         <div>
-                          <span className="text-slate-500 block">Board / Stream:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.twelfth_board || selectedApplicant.twelfth_group || "—"}</p>
+                          <span className="text-slate-500 block">Board & Passing Year:</span>
+                          <p className="font-bold text-slate-900">{selectedApplicant.twelfth_board || selectedApplicant.twelfthBoard || "State Board"} ({selectedApplicant.twelfth_pass_year || selectedApplicant.twelfthYear || "—"})</p>
                         </div>
                         <div>
-                          <span className="text-slate-500 block">Total Marks:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.twelfth_total_marks || "—"} / {selectedApplicant.twelfth_max_marks || "600"}</p>
+                          <span className="text-slate-500 block">Group / Stream:</span>
+                          <p className="font-bold text-slate-900">{selectedApplicant.twelfth_group || selectedApplicant.twelfthStream || "—"}</p>
                         </div>
                         <div>
-                          <span className="text-slate-500 block">Percentage:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.twelfth_percentage || "—"}%</p>
+                          <span className="text-slate-500 block">Total Marks & %:</span>
+                          <p className="font-bold text-slate-900">{selectedApplicant.twelfth_total_marks || selectedApplicant.twelfthTotalMarks || "—"} / {selectedApplicant.twelfth_max_marks || "600"} ({selectedApplicant.twelfth_percentage || selectedApplicant.twelfthPercentage || "—"}%)</p>
                         </div>
                       </div>
                     </div>
@@ -1007,103 +1122,185 @@ export default function AdminApplicationsScreen() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs mt-3">
                         <div>
                           <span className="text-slate-500 block">School Name:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.tenth_school_name || "—"}</p>
+                          <p className="font-bold text-slate-900">{selectedApplicant.tenth_school_name || selectedApplicant.tenthSchool || "—"}</p>
                         </div>
                         <div>
-                          <span className="text-slate-500 block">Passing Year:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.tenth_pass_year || "—"}</p>
+                          <span className="text-slate-500 block">Board & Passing Year:</span>
+                          <p className="font-bold text-slate-900">{selectedApplicant.tenth_board || selectedApplicant.tenthBoard || "State Board"} ({selectedApplicant.tenth_pass_year || selectedApplicant.tenthYear || "—"})</p>
                         </div>
                         <div>
                           <span className="text-slate-500 block">Total Marks:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.tenth_marks_obtained || "—"} / {selectedApplicant.tenth_max_marks || "500"}</p>
+                          <p className="font-bold text-slate-900">{selectedApplicant.tenth_marks_obtained || selectedApplicant.tenthTotalMarks || "—"} / {selectedApplicant.tenth_max_marks || "500"}</p>
                         </div>
                         <div>
                           <span className="text-slate-500 block">Percentage:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.tenth_percentage || "—"}%</p>
+                          <p className="font-bold text-slate-900">{selectedApplicant.tenth_percentage || selectedApplicant.tenthPercentage || "—"}%</p>
                         </div>
                       </div>
                     </div>
 
-                    {/* 11th Standard Section */}
-                    <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl">
-                      <span className="font-heading font-bold text-sm text-slate-900">11th Standard Marks</span>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs mt-3">
+                    {/* Course & Degree Preferences */}
+                    <div className="p-5 bg-white border border-slate-200 rounded-2xl">
+                      <span className="font-heading font-bold text-sm text-slate-900">Course & Degree Preferences</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs mt-3">
                         <div>
-                          <span className="text-slate-500 block">School:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.eleventh_school_name || "—"}</p>
+                          <span className="text-slate-500 block">Preferred Degree:</span>
+                          <p className="font-bold text-slate-900">{selectedApplicant.preferred_degree || selectedApplicant.preferredDegree || "—"}</p>
                         </div>
                         <div>
-                          <span className="text-slate-500 block">Passing Year:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.eleventh_pass_year || "—"}</p>
+                          <span className="text-slate-500 block">Preferred Course (1st):</span>
+                          <p className="font-bold text-slate-900">{selectedApplicant.preferred_branch || (Array.isArray(selectedApplicant.preferred_courses) ? selectedApplicant.preferred_courses[0] : "") || "—"}</p>
                         </div>
                         <div>
-                          <span className="text-slate-500 block">Total Marks:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.eleventh_total_marks || "—"}</p>
+                          <span className="text-slate-500 block">Preferred Course (2nd):</span>
+                          <p className="font-bold text-slate-900">{selectedApplicant.secondBranch || (Array.isArray(selectedApplicant.preferred_courses) ? selectedApplicant.preferred_courses[1] : "") || "—"}</p>
                         </div>
                         <div>
-                          <span className="text-slate-500 block">Percentage:</span>
-                          <p className="font-bold text-slate-900">{selectedApplicant.eleventh_percentage || "—"}%</p>
+                          <span className="text-slate-500 block">Preferred College / Location:</span>
+                          <p className="font-bold text-slate-900">{selectedApplicant.preferredCollegeLocation || (Array.isArray(selectedApplicant.preferred_districts) ? selectedApplicant.preferred_districts.join(", ") : "") || "—"}</p>
                         </div>
                       </div>
                     </div>
                   </section>
 
-                  {/* SECTION 4: PREFERENCES & CAREER */}
-                  <section id="sec-preferences" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  {/* SECTION 6: FINANCIAL INFORMATION */}
+                  <section id="sec-financial" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">4</span>
+                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">6</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        Course Preferences & Career Goals
+                        F. Financial Information & Needs
                       </h4>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Preferred Degree & Courses</span>
-                        <p className="font-bold text-sm text-slate-900 mt-1">{selectedApplicant.preferred_degree || "Engineering (B.E / B.Tech)"}</p>
-                        <p className="text-slate-600 mt-1">Branch Preference: {selectedApplicant.preferred_branch || "Computer Science / IT"}</p>
-                        <p className="text-slate-600">Second Preference: {selectedApplicant.second_branch || "ECE / Electrical"}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Annual Family Income</span>
+                        <p className="font-bold text-sm text-emerald-800 mt-0.5">{selectedApplicant.annualIncome || selectedApplicant.family_annual_income || selectedApplicant.annualFamilyIncome || "—"}</p>
                       </div>
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Location & Hostel</span>
-                        <p className="font-bold text-sm text-slate-900 mt-1">Location: {selectedApplicant.preferred_location || "Chennai / Coimbatore"}</p>
-                        <p className="text-slate-600 mt-1">Hostel Accommodation: {selectedApplicant.need_hostel ? "Yes, Required" : "Day Scholar"}</p>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Monthly Family Income</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.monthlyFamilyIncome || "—"}</p>
                       </div>
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 sm:col-span-2">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">Career Aspirations & Motivation</span>
-                        <p className="font-medium text-slate-800 mt-1 leading-relaxed">
-                          {selectedApplicant.career_aspiration || "Aiming to achieve higher education and uplift the economic status of family while contributing meaningfully to society."}
-                        </p>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Income Sources</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.incomeSources || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Family Debts</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.familyDebts || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Existing Education Loans</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.educationLoans || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Can Afford Without Support?</span>
+                        <p className="font-bold text-sm text-slate-900 mt-0.5">{selectedApplicant.affordabilityWithoutSupport || "No"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 sm:col-span-3">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Financial Difficulties Faced by Family</span>
+                        <p className="text-slate-800 mt-1 leading-relaxed">{selectedApplicant.financialDifficulties || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 sm:col-span-3">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Why the Student Needs Financial Support</span>
+                        <p className="text-slate-800 mt-1 leading-relaxed">{selectedApplicant.whyNeedSupport || "—"}</p>
                       </div>
                     </div>
                   </section>
 
-                  {/* SECTION 5: DOCUMENTS & VERIFICATION */}
+                  {/* SECTION 7: PERSONAL BACKGROUND & GOALS */}
+                  <section id="sec-background" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">7</span>
+                      <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
+                        G. Background, Career Ambition & Goals
+                      </h4>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${selectedApplicant.orphan ? "bg-rose-100 border-rose-300 text-rose-950" : "bg-white border-slate-200 text-slate-500"}`}>
+                        {selectedApplicant.orphan ? "✓ Orphan Student" : "Not Orphan"}
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${selectedApplicant.single_parent ? "bg-purple-100 border-purple-300 text-purple-950" : "bg-white border-slate-200 text-slate-500"}`}>
+                        {selectedApplicant.single_parent ? "✓ Single Parent Child" : "Both Parents"}
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${selectedApplicant.first_graduate ? "bg-amber-100 border-amber-300 text-amber-950" : "bg-white border-slate-200 text-slate-500"}`}>
+                        {selectedApplicant.first_graduate ? "✓ First-Generation Learner" : "Non-First Graduate"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold border bg-emerald-50 border-emerald-300 text-emerald-950">
+                        {selectedApplicant.willingToRelocateTN !== false ? "✓ Willing to Relocate in Tamil Nadu" : "Local Only"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 sm:col-span-2">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Career Ambition</span>
+                        <p className="font-medium text-slate-800 mt-1">{selectedApplicant.careerAmbition || selectedApplicant.career_aspiration || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Why the Student Wants Higher Education</span>
+                        <p className="font-medium text-slate-800 mt-1">{selectedApplicant.higherEducationReason || "—"}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold">Future Goals</span>
+                        <p className="font-medium text-slate-800 mt-1">{selectedApplicant.futureGoals || "—"}</p>
+                      </div>
+                      {selectedApplicant.specialCircumstances && (
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 sm:col-span-2">
+                          <span className="text-[10px] text-slate-500 uppercase font-bold">Special Family Circumstances</span>
+                          <p className="font-medium text-slate-800 mt-1">{selectedApplicant.specialCircumstances}</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* SECTION 8: DOCUMENTS CHECKLIST */}
                   <section id="sec-documents" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">5</span>
+                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">8</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        Documents & Verification Declaration
+                        H. Document Uploads & Checklist
                       </h4>
                     </div>
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                      <span className="font-heading font-bold text-sm text-slate-900">Document Upload Checklist</span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                        <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
-                          <span>10th Marksheet Copy</span>
-                          <span className="font-bold text-emerald-600 text-[11px]">✓ Provided</span>
-                        </div>
-                        <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
-                          <span>11th Marksheet Copy</span>
-                          <span className="font-bold text-emerald-600 text-[11px]">✓ Provided</span>
-                        </div>
-                        <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
-                          <span>12th Online Result / Marksheet</span>
-                          <span className="font-bold text-emerald-600 text-[11px]">✓ Provided</span>
-                        </div>
-                        <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
-                          <span>Aadhaar Card Copy</span>
-                          <span className="font-bold text-emerald-600 text-[11px]">✓ Provided</span>
-                        </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-heading font-bold text-sm text-slate-900">Uploaded Documents (Stored securely in AWS S3)</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900">
+                          Amazon S3 Cloud
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-3">
+                        {[
+                          { label: "Student Photograph", url: selectedApplicant.studentPhoto },
+                          { label: "10th Marksheet", url: selectedApplicant.document10thMarksheet || selectedApplicant.document_10th_marksheet },
+                          { label: "11th Marksheet", url: selectedApplicant.document11thMarksheet || selectedApplicant.document_11th_marksheet },
+                          { label: "12th Marksheet", url: selectedApplicant.document12thMarksheet || selectedApplicant.document_12th_marksheet },
+                          { label: "Community Certificate", url: selectedApplicant.documentCommunityCertificate },
+                          { label: "Income Certificate", url: selectedApplicant.documentIncomeCertificate },
+                          { label: "Aadhaar Document", url: selectedApplicant.documentAadhaarCard || selectedApplicant.document_aadhaar_card },
+                          { label: "Parent / Guardian ID Proof", url: selectedApplicant.documentParentIdProof },
+                        ].map((doc, idx) => (
+                          <div key={idx} className="p-3 bg-white rounded-xl border border-slate-200 flex flex-col justify-between gap-2 shadow-2xs">
+                            <span className="font-semibold text-slate-800 text-xs">{doc.label}</span>
+                            {doc.url ? (
+                              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                                <span className="font-bold text-emerald-600 text-[11px] flex items-center gap-1">
+                                  <CheckBadgeIcon className="w-3.5 h-3.5 text-emerald-500" /> Uploaded
+                                </span>
+                                <a
+                                  href={doc.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" /> View S3
+                                </a>
+                              </div>
+                            ) : (
+                              <div className="pt-1 border-t border-slate-100 text-slate-400 text-[11px] italic">
+                                Not provided
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
 
