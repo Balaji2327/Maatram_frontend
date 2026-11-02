@@ -81,23 +81,42 @@ export default function AdminVolunteersScreen() {
     fetchApplications();
   }, []);
 
-  // Volunteer stats calculation
+  // Volunteer stats calculation (for admission candidates needing verification, excluding enrolled students)
+  const candidateApplications = useMemo(() => {
+    return applications.filter((a) => {
+      const isAdmittedStudent =
+        a.current_stage === "admitted" ||
+        a.status === "selected" ||
+        a.status === "scholarship_awarded" ||
+        (a.application_number && a.application_number.includes("SCH-"));
+      return !isAdmittedStudent;
+    });
+  }, [applications]);
+
   const volunteerStats = useMemo(() => {
     let reviewed = 0;
-    applications.forEach((a) => {
+    candidateApplications.forEach((a) => {
       if (a.volunteer_suggestion && String(a.volunteer_suggestion).trim() !== "") {
         reviewed++;
       }
     });
     return {
       reviewed,
-      pending: Math.max(applications.length - reviewed, 0),
+      pending: Math.max(candidateApplications.length - reviewed, 0),
     };
-  }, [applications]);
+  }, [candidateApplications]);
 
   // Filter applications
   const filteredApplications = useMemo(() => {
-    let result = [...applications];
+    // Filter out enrolled/approved scholarship students — they are admitted students, not volunteer verification candidates
+    let result = applications.filter((a) => {
+      const isAdmittedStudent =
+        a.current_stage === "admitted" ||
+        a.status === "selected" ||
+        a.status === "scholarship_awarded" ||
+        (a.application_number && a.application_number.includes("SCH-"));
+      return !isAdmittedStudent;
+    });
 
     if (statusFilter === "reviewed") {
       result = result.filter((a) => a.volunteer_suggestion && a.volunteer_suggestion.trim() !== "");
@@ -377,39 +396,6 @@ export default function AdminVolunteersScreen() {
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#F7BC0F] focus:bg-white focus:ring-2 focus:ring-[#F7BC0F]/20 transition"
               />
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setStatusFilter("all")}
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${statusFilter === "all"
-                  ? "bg-[#F7BC0F] text-slate-950 font-extrabold shadow-2xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-              >
-                All ({applications.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("reviewed")}
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${statusFilter === "reviewed"
-                  ? "bg-emerald-600 text-white font-extrabold shadow-2xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-              >
-                Reviewed ({volunteerStats.reviewed})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("pending")}
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${statusFilter === "pending"
-                  ? "bg-amber-500 text-slate-950 font-extrabold shadow-2xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-              >
-                Pending ({volunteerStats.pending})
-              </button>
-            </div>
           </div>
 
           {/* Volunteer Records Table */}
@@ -420,7 +406,7 @@ export default function AdminVolunteersScreen() {
                   Volunteer Verification Reviews
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Showing {filteredApplications.length} of {applications.length} students
+                  Showing {filteredApplications.length} of {candidateApplications.length} applicants
                 </p>
               </div>
             </div>

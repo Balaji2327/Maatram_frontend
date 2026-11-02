@@ -362,6 +362,16 @@ export const adminApi = {
     return callApi(() => apiClient.delete(`/admin/events/${id}`));
   },
 
+  // Students Directory
+  getStudents: async (): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get("/admin/students"));
+  },
+
+  // Alumni Directory
+  getAlumni: async (): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get("/admin/alumni"));
+  },
+
   logout: () => {
     clearAdminToken();
   },
