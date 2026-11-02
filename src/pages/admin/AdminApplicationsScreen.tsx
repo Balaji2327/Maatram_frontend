@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   UserGroupIcon,
   CheckCircleIcon,
@@ -40,6 +40,7 @@ import AdminSidebar, { AdminTab } from "../../components/AdminSidebar";
 
 export default function AdminApplicationsScreen() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Authentication Guard
   useEffect(() => {
@@ -95,6 +96,33 @@ export default function AdminApplicationsScreen() {
       if (res.success && res.data) {
         setApplications(res.data);
         if (res.stats) setStats(res.stats);
+
+        // Check if an applicant ID was in the URL or sessionStorage to restore on reload
+        const urlApplicantId =
+          searchParams?.get("applicantId") ||
+          searchParams?.get("id") ||
+          (typeof window !== "undefined" ? sessionStorage.getItem("admin_selected_applicant_id") : null);
+
+        if (urlApplicantId) {
+          const found = res.data.find(
+            (a: any) =>
+              String(a.id) === String(urlApplicantId) ||
+              String(a.application_number) === String(urlApplicantId)
+          );
+          if (found) {
+            setSelectedApplicant(found);
+          } else {
+            // Try fetching by ID directly if not in list
+            try {
+              const singleRes = await adminApi.getApplicationById(urlApplicantId);
+              if (singleRes.success && singleRes.data) {
+                setSelectedApplicant(singleRes.data);
+              }
+            } catch {
+              // Ignore if not found
+            }
+          }
+        }
       } else {
         setErrorMessage(res.message || "Failed to load applications");
       }
@@ -109,6 +137,31 @@ export default function AdminApplicationsScreen() {
   useEffect(() => {
     fetchApplications();
   }, []);
+
+  // Helper to open applicant details and persist in URL & sessionStorage
+  const handleSelectApplicant = (app: any) => {
+    setSelectedApplicant(app);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("admin_selected_applicant_id", app.id);
+      const url = new URL(window.location.href);
+      url.searchParams.set("applicantId", app.id);
+      window.history.replaceState({}, "", url.toString());
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Helper to close applicant details and remove from URL & sessionStorage
+  const handleCloseApplicant = () => {
+    setSelectedApplicant(null);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("admin_selected_applicant_id");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("applicantId");
+      url.searchParams.delete("id");
+      window.history.replaceState({}, "", url.toString());
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // Unique district list for filter dropdown
   const districtList = useMemo(() => {
@@ -644,7 +697,7 @@ export default function AdminApplicationsScreen() {
         activeTab="applications"
         onTabChange={(tab) => {
           setActiveTab(tab);
-          setSelectedApplicant(null);
+          handleCloseApplicant();
         }}
         applicationsCount={applications.length}
         reviewedCount={volunteerStats.reviewed}
@@ -664,10 +717,7 @@ export default function AdminApplicationsScreen() {
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedApplicant(null);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
+                    onClick={handleCloseApplicant}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 transition cursor-pointer shadow-2xs"
                   >
                     <ArrowLeftIcon className="w-4 h-4 text-slate-600" />
@@ -689,22 +739,6 @@ export default function AdminApplicationsScreen() {
                     <PrinterIcon className="w-4 h-4 text-slate-500" />
                     <span>Print Form</span>
                   </button>
-
-                  <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs">
-                    <span className="text-slate-500 font-normal">Status:</span>
-                    <select
-                      value={selectedApplicant.status}
-                      onChange={(e) => handleStatusChange(selectedApplicant.id, e.target.value)}
-                      className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="submitted">Submitted</option>
-                      <option value="under_review">Under Review</option>
-                      <option value="shortlisted">Shortlisted</option>
-                      <option value="selected">Selected</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
-                  </div>
                 </div>
               </div>
 
@@ -747,9 +781,6 @@ export default function AdminApplicationsScreen() {
                 <div className="p-5 bg-linear-to-r from-amber-50/70 to-orange-50/60 border border-amber-300 rounded-2xl">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="p-2 rounded-xl bg-[#F7BC0F] text-slate-950 font-bold shadow-xs">
-                        <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
-                      </span>
                       <div>
                         <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
                           Volunteer Suggestion / Remarks
@@ -832,7 +863,7 @@ export default function AdminApplicationsScreen() {
                 </div>
 
                 {/* Quick Jump Navigation Strip */}
-                <div className="sticky top-20 z-10 flex border border-slate-200/90 bg-white/90 backdrop-blur-md p-1.5 rounded-2xl gap-2 overflow-x-auto text-xs font-heading font-bold text-slate-700 shadow-xs">
+                <div className="flex border border-slate-200 bg-slate-50/80 p-1.5 rounded-2xl gap-2 overflow-x-auto text-xs font-heading font-bold text-slate-700 shadow-2xs">
                   <button
                     type="button"
                     onClick={() => document.getElementById("sec-personal")?.scrollIntoView({ behavior: "smooth" })}
@@ -894,11 +925,10 @@ export default function AdminApplicationsScreen() {
                 {/* Single Scroll Sections Container */}
                 <div className="space-y-8 text-xs text-slate-800">
                   {/* SECTION 1: PERSONAL DETAILS */}
-                  <section id="sec-personal" className="scroll-mt-32 space-y-3">
+                  <section id="sec-personal" className="scroll-mt-6 space-y-3">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">1</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        A. Personal Information
+                        Personal Information
                       </h4>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -950,11 +980,10 @@ export default function AdminApplicationsScreen() {
                   </section>
 
                   {/* SECTION 2: FAMILY DETAILS */}
-                  <section id="sec-family" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  <section id="sec-family" className="scroll-mt-6 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">2</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        B. Family Information
+                        Family Information
                       </h4>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -990,11 +1019,10 @@ export default function AdminApplicationsScreen() {
                   </section>
 
                   {/* SECTION 3: SIBLINGS DETAILS */}
-                  <section id="sec-siblings" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  <section id="sec-siblings" className="scroll-mt-6 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">3</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        C. Siblings Information
+                        Siblings Information
                       </h4>
                     </div>
                     <div className="flex flex-wrap gap-4 text-xs mb-3">
@@ -1036,11 +1064,10 @@ export default function AdminApplicationsScreen() {
                   </section>
 
                   {/* SECTION 4: ADDRESS INFORMATION */}
-                  <section id="sec-address" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  <section id="sec-address" className="scroll-mt-6 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">4</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        D. Address & Residence Details
+                        Address & Residence Details
                       </h4>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -1076,11 +1103,10 @@ export default function AdminApplicationsScreen() {
                   </section>
 
                   {/* SECTION 5: EDUCATIONAL INFORMATION */}
-                  <section id="sec-academic" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  <section id="sec-academic" className="scroll-mt-6 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">5</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        E. Educational Information (10th, 12th & Preferences)
+                        Educational Information (10th, 12th & Preferences)
                       </h4>
                     </div>
 
@@ -1164,11 +1190,10 @@ export default function AdminApplicationsScreen() {
                   </section>
 
                   {/* SECTION 6: FINANCIAL INFORMATION */}
-                  <section id="sec-financial" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  <section id="sec-financial" className="scroll-mt-6 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">6</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        F. Financial Information & Needs
+                        Financial Information & Needs
                       </h4>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -1208,11 +1233,10 @@ export default function AdminApplicationsScreen() {
                   </section>
 
                   {/* SECTION 7: PERSONAL BACKGROUND & GOALS */}
-                  <section id="sec-background" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  <section id="sec-background" className="scroll-mt-6 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">7</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        G. Background, Career Ambition & Goals
+                        Background, Career Ambition & Goals
                       </h4>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1253,19 +1277,15 @@ export default function AdminApplicationsScreen() {
                   </section>
 
                   {/* SECTION 8: DOCUMENTS CHECKLIST */}
-                  <section id="sec-documents" className="scroll-mt-32 space-y-4 pt-6 border-t border-slate-200">
+                  <section id="sec-documents" className="scroll-mt-6 space-y-4 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                      <span className="w-6 h-6 rounded-lg bg-[#F7BC0F] text-slate-950 font-bold text-xs flex items-center justify-center">8</span>
                       <h4 className="font-heading font-black text-sm text-slate-900 uppercase tracking-wider">
-                        H. Document Uploads & Checklist
+                        Document Uploads & Checklist
                       </h4>
                     </div>
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                       <div className="flex items-center justify-between">
-                        <span className="font-heading font-bold text-sm text-slate-900">Uploaded Documents (Stored securely in AWS S3)</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900">
-                          Amazon S3 Cloud
-                        </span>
+                        <span className="font-heading font-bold text-sm text-slate-900">Uploaded Documents</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-3">
                         {[
@@ -1291,7 +1311,7 @@ export default function AdminApplicationsScreen() {
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline"
                                 >
-                                  <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" /> View S3
+                                  <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" /> View
                                 </a>
                               </div>
                             ) : (
@@ -1485,10 +1505,7 @@ export default function AdminApplicationsScreen() {
                           <tr
                             key={app.id}
                             className="hover:bg-amber-50/30 transition duration-150 cursor-pointer"
-                            onClick={() => {
-                              setSelectedApplicant(app);
-                              window.scrollTo({ top: 0, behavior: "smooth" });
-                            }}
+                            onClick={() => handleSelectApplicant(app)}
                           >
                             {/* Application Number */}
                             <td className="py-3.5 px-4 font-mono font-bold text-slate-800 whitespace-nowrap">
@@ -1667,10 +1684,7 @@ export default function AdminApplicationsScreen() {
                               <div className="flex items-center justify-end gap-1">
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setSelectedApplicant(app);
-                                    window.scrollTo({ top: 0, behavior: "smooth" });
-                                  }}
+                                  onClick={() => handleSelectApplicant(app)}
                                   className="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
                                   title="View full application"
                                 >

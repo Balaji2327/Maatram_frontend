@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import SignOutModal from "../components/SignOutModal";
+import StudentSidebar, { StudentNavTab } from "../components/StudentSidebar";
 import { applicationApi, authApi, getAuthToken } from "../lib/api";
 import {
   UserIcon,
@@ -33,6 +34,7 @@ import {
   IdentificationIcon,
   CheckBadgeIcon,
   ClockIcon,
+  ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 
 export type ApplicationTabType =
@@ -48,11 +50,17 @@ export type ApplicationTabType =
 export default function DashboardScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ApplicationTabType>("personal");
+  const [studentNavTab, setStudentNavTab] = useState<StudentNavTab>("dashboard");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [previewDocModal, setPreviewDocModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    url: string;
+  } | null>(null);
 
   // Authentication Guard: Ensure user has signed in with credentials
   useEffect(() => {
@@ -161,6 +169,7 @@ export default function DashboardScreen() {
     // H. Document Uploads
     studentPhoto: "",
     document10thMarksheet: "",
+    document11thMarksheet: "",
     document12thMarksheet: "",
     documentCommunityCertificate: "",
     documentIncomeCertificate: "",
@@ -380,128 +389,1278 @@ export default function DashboardScreen() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#F8FAFC] text-[#0F172A] font-primary selection:bg-[#F7BC0F] selection:text-black">
-      {/* ================= TOP NAVIGATION BAR ================= */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
-        <div className="w-full px-4 sm:px-8 lg:px-12 h-18 flex items-center justify-between gap-4">
-          
-          {/* Left: Brand Logo + Portal Tag */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-            <Link href="/dashboard" className="flex items-center focus:outline-none">
-              <Image
-                src="/assets/images/logo.png"
-                alt="Maatram Foundation"
-                width={170}
-                height={80}
-                priority
-                className="h-10 sm:h-11 w-auto object-contain"
-              />
-            </Link>
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-primary flex">
+      {/* 1. Student Sidebar matching Admin Portal */}
+      <StudentSidebar
+        activeTab={studentNavTab}
+        onTabChange={(tab) => {
+          setStudentNavTab(tab);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onSignOutClick={() => setShowSignOutModal(true)}
+        applicationNumber={formData.applicationNumber}
+        studentName={formData.fullName}
+        studentPhoto={formData.studentPhoto}
+      />
 
-            {/* Vertical Divider */}
-            <div className="hidden md:block h-7 w-px bg-slate-200" />
-
-            {/* Portal Title & Batch Tag */}
-            <div className="hidden md:flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-heading font-black text-xs text-slate-900 tracking-tight">
-                  Student Application Portal
-                </span>
-                <span className="px-1.5 py-0.5 rounded-md bg-amber-100/80 text-[10px] font-bold text-amber-900 border border-amber-300/60">
-                  2025–26
-                </span>
-              </div>
-              <span className="text-[11px] text-slate-500 font-primary">
-                Transforming Lives Through Free Higher Education
-              </span>
-            </div>
-          </div>
-
-          {/* Right: Student Profile Pill + Sign Out */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            {/* Student Profile Capsule */}
-            <div className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/90 pl-1.5 pr-3 py-1.5 rounded-2xl transition">
-              {/* Initials Avatar */}
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#F7BC0F] to-amber-300 text-slate-950 font-heading font-black text-xs flex items-center justify-center shadow-2xs">
-                {formData.fullName
-                  ? formData.fullName.trim().charAt(0).toUpperCase()
-                  : "S"}
-              </div>
-
-              <div className="flex flex-col text-left">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-slate-900 leading-tight max-w-[120px] sm:max-w-[160px] truncate">
-                    {formData.fullName || "Student Applicant"}
+      {/* 2. Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#F8FAFC]">
+        {/* ================= TOP NAVIGATION BAR ================= */}
+        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
+          <div className="w-full px-4 sm:px-8 lg:px-10 h-16 flex items-center justify-between gap-4">
+            
+            {/* Left: Section Indicator & Batch Tag */}
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F7BC0F]" />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="font-heading font-black text-xs text-slate-900 tracking-tight uppercase">
+                    {studentNavTab === "dashboard"
+                      ? "Student Application Dashboard"
+                      : studentNavTab === "status"
+                      ? "Application Status"
+                      : "Student Profile"}
                   </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Active Session" />
+                  <span className="px-1.5 py-0.2 rounded bg-amber-100/80 text-[10px] font-bold text-amber-900 border border-amber-300/60 font-mono">
+                    2025–26
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  {formData.applicationNumber || "MF-2025-001"}
+                <span className="text-[11px] text-slate-500 font-primary hidden sm:inline">
+                  Maatram Foundation • 100% Free Higher Education Sponsorship
                 </span>
               </div>
             </div>
 
-            {/* Sign Out Button */}
-            <button
-              type="button"
-              onClick={() => setShowSignOutModal(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-heading font-bold text-slate-600 hover:text-red-600 px-3 py-2 rounded-xl border border-slate-200 hover:border-red-200 hover:bg-red-50/80 transition cursor-pointer shadow-2xs"
-              title="Sign Out of Portal"
-            >
-              <ArrowLeftOnRectangleIcon className="w-4 h-4 text-slate-500" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
-          </div>
-
-        </div>
-      </header>
-
-      {/* ================= MAIN CONTENT CONTAINER ================= */}
-      <main className="w-full px-6 sm:px-8 lg:px-12 py-6 sm:py-8">
-        
-        {/* Banner Notification if Submitted */}
-        {isSubmitted ? (
-          <div className="bg-white border-2 border-emerald-500 rounded-3xl p-8 sm:p-12 text-center shadow-xl max-w-2xl mx-auto my-6 animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600 shadow-sm">
-              <CheckCircleIcon className="w-10 h-10" />
-            </div>
-            <h2 className="font-heading font-black text-2xl sm:text-3xl text-slate-900 mt-5">
-              Application Submitted Successfully!
-            </h2>
-            <p className="font-primary text-sm text-slate-600 mt-2 max-w-md mx-auto">
-              Your scholarship application has been received under Application ID:{" "}
-              <strong className="text-slate-900 font-mono">{formData.applicationNumber || "MF-2025-001"}</strong>.
-              Our verification team will review your academic and socio-economic details.
-            </p>
-
-            <div className="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left max-w-md mx-auto space-y-2 text-xs text-slate-700">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Applicant:</span>
-                <span className="font-semibold text-slate-900">{formData.fullName || "Student Applicant"}</span>
+            {/* Right: Student Profile Pill + Quick Tab Links */}
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+              <div className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/90 pl-1.5 pr-3 py-1 rounded-xl transition">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#F7BC0F] to-amber-300 text-slate-950 font-heading font-black text-xs flex items-center justify-center shadow-2xs overflow-hidden shrink-0">
+                  {formData.studentPhoto ? (
+                    <img
+                      src={formData.studentPhoto}
+                      alt={formData.fullName || "Student Profile"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{formData.fullName ? formData.fullName.trim().charAt(0).toUpperCase() : "S"}</span>
+                  )}
+                </div>
+                <div className="flex flex-col text-left">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-900 leading-tight max-w-[120px] sm:max-w-[160px] truncate">
+                      {formData.fullName || "Student Applicant"}
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Active Session" />
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {formData.applicationNumber || "MF-2025-001"}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Target Degree:</span>
-                <span className="font-semibold text-slate-900">{formData.preferredDegree || "Not specified"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Status:</span>
-                <span className="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  Under Verification
-                </span>
-              </div>
-            </div>
 
-            <div className="mt-8 flex items-center justify-center">
-              <Link
-                href="/process"
-                className="w-full sm:w-auto px-8 py-3 bg-[#F7BC0F] hover:bg-[#e5ad0c] active:scale-[0.99] text-slate-950 font-heading font-black text-sm rounded-xl transition shadow-lg shadow-[#F7BC0F]/30 hover:shadow-xl border border-[#e5ad0c] flex items-center justify-center gap-2 cursor-pointer"
+              {/* Sign Out Button */}
+              <button
+                type="button"
+                onClick={() => setShowSignOutModal(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-heading font-bold text-slate-600 hover:text-red-600 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-red-200 hover:bg-red-50/80 transition cursor-pointer shadow-2xs"
+                title="Sign Out of Portal"
               >
-                <span>Go to Home</span>
-                <ArrowRightIcon className="w-4 h-4 stroke-[2.5]" />
-              </Link>
+                <ArrowLeftOnRectangleIcon className="w-4 h-4 text-slate-500" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
             </div>
+
           </div>
-        ) : isReviewOpen ? (
+        </header>
+
+        {/* ================= CONDITIONAL CONTENT VIEWS ================= */}
+        {studentNavTab === "status" ? (
+          /* ================= VIEW 2: APPLICATION STATUS ================= */
+          <main className="w-full px-6 sm:px-8 lg:px-10 py-6 sm:py-8 space-y-6 flex-1">
+            {/* Header Status Card */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-4">
+                  <Image
+                    src="/assets/images/logo.png"
+                    alt="Maatram Foundation"
+                    width={140}
+                    height={70}
+                    priority
+                    className="h-12 w-auto object-contain rounded-md shrink-0"
+                  />
+                  <div className="h-10 w-px bg-slate-200 hidden sm:block"></div>
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                      Admission Track 2025 - 2026
+                    </span>
+                    <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900 mt-2">
+                      Application Status
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                      {isSubmitted
+                        ? "Your scholarship application has been officially submitted and is under verification."
+                        : "Your application is currently in draft mode. Complete all sections and submit."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:items-end bg-slate-50 border border-slate-200 p-4 rounded-2xl text-xs space-y-1">
+                  <span className="text-slate-500">Application Number:</span>
+                  <span className="font-mono font-bold text-slate-900 text-sm">
+                    {formData.applicationNumber || "MF-2025-001"}
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1.5 font-bold text-[11px] px-2 py-0.5 rounded-md border ${
+                      isSubmitted
+                        ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                        : "text-amber-700 bg-amber-50 border-amber-200"
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        isSubmitted ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                      }`}
+                    />
+                    {isSubmitted ? "Application Submitted" : "Draft in Progress"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Status Overview Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4.5 space-y-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Status</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${isSubmitted ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    <strong className="text-slate-900 text-sm font-heading">
+                      {isSubmitted ? "Under Verification" : "Draft Saved"}
+                    </strong>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {isSubmitted ? "Official review underway" : "Form not yet submitted"}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4.5 space-y-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Target Degree</span>
+                  <div className="flex items-center gap-2">
+                    <AcademicCapIcon className="w-4 h-4 text-[#F7BC0F]" />
+                    <strong className="text-slate-900 text-sm font-heading truncate">
+                      {formData.preferredDegree || "Not Specified"}
+                    </strong>
+                  </div>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    {formData.preferredBranch || "Branch preference open"}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4.5 space-y-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">12th Standard Cutoff</span>
+                  <div className="flex items-center gap-2">
+                    <strong className="text-slate-900 font-mono text-base font-bold">
+                      {formData.twelfthCutoff || "—"}
+                    </strong>
+                    <span className="text-[11px] text-slate-500">/ 200</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {formData.twelfthPercentage ? `${formData.twelfthPercentage}% Score` : "Marks recorded"}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4.5 space-y-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Verification Team</span>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheckIcon className="w-4 h-4 text-emerald-600" />
+                    <strong className="text-slate-900 text-sm font-heading">Maatram Trust</strong>
+                  </div>
+                  <p className="text-[11px] text-slate-500">Chennai Central Office</p>
+                </div>
+              </div>
+
+              {/* Application Details Summary */}
+              <div className="mt-6 bg-slate-50/60 border border-slate-200 rounded-2xl p-5 space-y-4">
+                <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                  <DocumentTextIcon className="w-4 h-4 text-[#F7BC0F]" />
+                  Submitted Application Summary
+                </h3>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 text-xs">
+                  <div>
+                    <span className="text-[11px] text-slate-500 block uppercase">Applicant Full Name</span>
+                    <strong className="text-slate-900 text-sm">{formData.fullName || "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block uppercase">Primary Mobile</span>
+                    <strong className="text-slate-900 font-mono">{formData.mobileNumber || "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block uppercase">Email Address</span>
+                    <strong className="text-slate-900 truncate block">{formData.email || "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block uppercase">District & State</span>
+                    <strong className="text-slate-900">{formData.district || "—"}, {formData.state || "Tamil Nadu"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block uppercase">First Graduate</span>
+                    <strong className="text-slate-900">{formData.firstGraduate || "Yes"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block uppercase">Community / Category</span>
+                    <strong className="text-slate-900">{formData.community || "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block uppercase">Annual Family Income</span>
+                    <strong className="text-slate-900 font-mono">{formData.annualIncome ? `₹${formData.annualIncome}` : "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block uppercase">Submission Date</span>
+                    <strong className="text-slate-900">{isSubmitted ? "Application Received" : "Not yet submitted"}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Official Instructions / Note */}
+              <div className="mt-6 p-4 bg-amber-50/70 border border-amber-200 rounded-2xl text-xs text-amber-950 flex items-start gap-3">
+                <InformationCircleIcon className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">Important Notification for Applicant:</p>
+                  <p className="text-[11px] text-amber-900 leading-relaxed">
+                    Maatram Foundation provides 100% cost-free scholarship sponsorships covering tuition fees for higher education. All updates and notifications regarding your scholarship application will be sent directly via SMS and WhatsApp to your registered mobile number <strong className="font-mono">{formData.mobileNumber || "provided"}</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStudentNavTab("dashboard");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-heading font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  ← Return to Application Form
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudentNavTab("dashboard");
+                      setIsReviewOpen(true);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="px-5 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-heading font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-2"
+                  >
+                    <EyeIcon className="w-4 h-4 text-slate-500" />
+                    <span>View Application Document</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudentNavTab("profile");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="px-5 py-2.5 bg-[#F7BC0F] hover:bg-[#e5ad0c] text-slate-950 font-heading font-black text-xs rounded-xl transition cursor-pointer shadow-sm"
+                  >
+                    View Student Profile
+                  </button>
+                </div>
+              </div>
+            </div>
+          </main>
+        ) : studentNavTab === "profile" ? (
+          /* ================= VIEW 3: STUDENT PROFILE (ALL DETAILS) ================= */
+          <main className="w-full px-6 sm:px-8 lg:px-10 py-6 sm:py-8 space-y-6 flex-1">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-7">
+              
+              {/* Profile Header Card */}
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-4 sm:gap-5">
+                  {/* Student Photo Thumbnail / Avatar */}
+                  <div className="relative group cursor-pointer" onClick={() => formData.studentPhoto && setPreviewDocModal({ isOpen: true, title: "Student Photograph", url: formData.studentPhoto })}>
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#F7BC0F] to-amber-300 text-slate-950 font-heading font-black text-2xl flex items-center justify-center shadow-md border-2 border-amber-300 overflow-hidden shrink-0">
+                      {formData.studentPhoto ? (
+                        <img
+                          src={formData.studentPhoto}
+                          alt={formData.fullName || "Student Profile"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{formData.fullName ? formData.fullName.trim().charAt(0).toUpperCase() : "S"}</span>
+                      )}
+                    </div>
+                    {formData.studentPhoto && (
+                      <span className="absolute -bottom-1 -right-1 bg-slate-900 text-white p-1 rounded-full text-[10px] shadow-sm" title="Click to view photo">
+                        <EyeIcon className="w-3.5 h-3.5" />
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="font-heading font-black text-2xl sm:text-3xl text-slate-900">
+                        {formData.fullName || "Student Applicant"}
+                      </h1>
+                      <span
+                        className={`inline-block text-[11px] font-heading font-black uppercase px-2.5 py-0.5 rounded-full border ${
+                          isSubmitted
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                            : "bg-amber-50 text-amber-800 border-amber-200"
+                        }`}
+                      >
+                        {isSubmitted ? "Submitted & Under Review" : "Draft Application"}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium">
+                      <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                        {formData.applicationNumber || "MF-2025-001"}
+                      </span>
+                      <span>•</span>
+                      <span>{formData.mobileNumber || "No mobile"}</span>
+                      <span>•</span>
+                      <span>{formData.email || "No email"}</span>
+                      <span>•</span>
+                      <span>{formData.district ? `${formData.district}, ${formData.state || "Tamil Nadu"}` : "Tamil Nadu"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudentNavTab("dashboard");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="px-4 py-2 bg-[#F7BC0F] hover:bg-[#e5ad0c] text-slate-950 font-heading font-black text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <PencilSquareIcon className="w-4 h-4 stroke-[2.5]" />
+                    <span>Edit Application</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsReviewOpen(true);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-heading font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <EyeIcon className="w-4 h-4 text-slate-600" />
+                    <span>Full Document View</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Summary KPIs Ribbon */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">12th Cutoff</span>
+                  <div className="flex items-baseline gap-1">
+                    <strong className="text-slate-950 font-heading font-black text-lg">
+                      {formData.twelfthCutoff || "—"}
+                    </strong>
+                    <span className="text-[11px] text-amber-700 font-medium">/ 200</span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">12th Total</span>
+                  <strong className="text-slate-900 font-heading font-black text-lg">
+                    {formData.twelfthTotalMarks || calc12thTotal().total || "—"}
+                  </strong>
+                  <span className="text-[10px] text-slate-500 block">
+                    {formData.twelfthPercentage ? `${formData.twelfthPercentage}% Score` : "Score Recorded"}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">10th Score</span>
+                  <strong className="text-slate-900 font-heading font-black text-lg">
+                    {formData.tenthTotalMarks || "—"}
+                  </strong>
+                  <span className="text-[10px] text-slate-500 block">
+                    {formData.tenthPercentage ? `${formData.tenthPercentage}% SSLC` : "SSLC Marksheet"}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Target Degree</span>
+                  <strong className="text-slate-900 font-heading font-bold text-sm truncate block" title={formData.preferredDegree}>
+                    {formData.preferredDegree ? formData.preferredDegree.split(" ")[0] : "Open"}
+                  </strong>
+                  <span className="text-[10px] text-slate-500 block truncate" title={formData.preferredBranch}>
+                    {formData.preferredBranch || "Branch choice open"}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Annual Income</span>
+                  <strong className="text-slate-900 font-mono font-black text-base truncate block">
+                    {formData.annualIncome ? `₹${formData.annualIncome}` : "—"}
+                  </strong>
+                  <span className="text-[10px] text-slate-500 block">
+                    {formData.firstGraduate === "Yes" ? "First Graduate" : "Family Income"}
+                  </span>
+                </div>
+
+                <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">Documents Attached</span>
+                  <strong className="text-emerald-950 font-heading font-black text-lg">
+                    {[
+                      formData.studentPhoto,
+                      formData.document10thMarksheet,
+                      formData.document11thMarksheet,
+                      formData.document12thMarksheet,
+                      formData.documentCommunityCertificate,
+                      formData.documentIncomeCertificate,
+                      formData.documentAadhaarCard,
+                      formData.documentParentIdProof,
+                    ].filter(Boolean).length} / 8
+                  </strong>
+                  <span className="text-[10px] text-emerald-700 block">Proofs Uploaded</span>
+                </div>
+              </div>
+
+              {/* ================= COMPREHENSIVE STUDENT DETAILS (ALL FILLED SECTIONS) ================= */}
+              <div className="space-y-6">
+
+                {/* Section A: Personal Information */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                      <UserIcon className="w-4 h-4 text-[#F7BC0F]" />
+                      Personal Information
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        setActiveTab("personal");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-bold text-[#b48400] hover:text-[#8a6500] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" />
+                      Edit Details
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 text-xs">
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Student Full Name</span>
+                      <strong className="text-slate-900 text-sm font-heading">{formData.fullName || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Date of Birth</span>
+                      <strong className="text-slate-900">{formData.dob || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Gender</span>
+                      <strong className="text-slate-900">{formData.gender || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Blood Group</span>
+                      <strong className="text-slate-900">{formData.bloodGroup || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Primary Mobile Number</span>
+                      <strong className="text-slate-900 font-mono">{formData.mobileNumber || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">WhatsApp Number</span>
+                      <strong className="text-slate-900 font-mono">{formData.whatsappNumber || formData.mobileNumber || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Alternate Mobile</span>
+                      <strong className="text-slate-900 font-mono">{formData.altMobileNumber || "None"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Email Address</span>
+                      <strong className="text-slate-900 truncate block">{formData.email || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Aadhaar Card Number</span>
+                      <strong className="text-slate-900 font-mono">{formData.aadhaarNumber || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Community / Category</span>
+                      <strong className="text-slate-900">{formData.community || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Nationality</span>
+                      <strong className="text-slate-900">{formData.nationality || "Indian"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Marital Status</span>
+                      <strong className="text-slate-900">{formData.maritalStatus || "Single"}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section B: Family Information */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                      <HomeModernIcon className="w-4 h-4 text-[#F7BC0F]" />
+                      Family Information
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        setActiveTab("family");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-bold text-[#b48400] hover:text-[#8a6500] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" />
+                      Edit Details
+                    </button>
+                  </div>
+                  
+                  {/* Father, Mother & Guardian Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Father Card */}
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+                      <div className="font-bold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-100 pb-1.5 flex items-center justify-between">
+                        <span>Father's Particulars</span>
+                        <span className="text-[11px] text-slate-500 font-normal">{formData.fatherEmploymentStatus || "—"}</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Full Name:</span>
+                          <strong className="text-slate-900">{formData.fatherName || "—"}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Occupation / Work:</span>
+                          <strong className="text-slate-900">{formData.fatherOccupation || "—"}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Monthly Income:</span>
+                          <strong className="text-slate-900 font-mono">{formData.fatherMonthlyIncome ? `₹${formData.fatherMonthlyIncome}` : "—"}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mother Card */}
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+                      <div className="font-bold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-100 pb-1.5 flex items-center justify-between">
+                        <span>Mother's Particulars</span>
+                        <span className="text-[11px] text-slate-500 font-normal">{formData.motherEmploymentStatus || "—"}</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Full Name:</span>
+                          <strong className="text-slate-900">{formData.motherName || "—"}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Occupation / Work:</span>
+                          <strong className="text-slate-900">{formData.motherOccupation || "—"}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Monthly Income:</span>
+                          <strong className="text-slate-900 font-mono">{formData.motherMonthlyIncome ? `₹${formData.motherMonthlyIncome}` : "—"}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Guardian Card (if provided) */}
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+                      <div className="font-bold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-100 pb-1.5 flex items-center justify-between">
+                        <span>Guardian's Particulars</span>
+                        <span className="text-[11px] text-slate-500 font-normal">{formData.guardianRelation || "Optional"}</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Guardian Name:</span>
+                          <strong className="text-slate-900">{formData.guardianName || "Not applicable"}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Occupation:</span>
+                          <strong className="text-slate-900">{formData.guardianOccupation || "—"}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-slate-500 block">Monthly Income:</span>
+                          <strong className="text-slate-900 font-mono">{formData.guardianMonthlyIncome ? `₹${formData.guardianMonthlyIncome}` : "—"}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Family Household Context */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-3 border-t border-slate-200">
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Annual Family Income</span>
+                      <strong className="text-slate-900 font-mono text-sm">{formData.annualIncome ? `₹${formData.annualIncome}` : "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Family Members Count</span>
+                      <strong className="text-slate-900">{formData.familyMembersCount || "—"} Persons</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Family Structure</span>
+                      <strong className="text-slate-900">{formData.familyType || "Nuclear Family"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Family Situation</span>
+                      <strong className="text-slate-900">{formData.familySituation || "Both parents"}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section C: Siblings Information */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                      <UserGroupIcon className="w-4 h-4 text-[#F7BC0F]" />
+                      Siblings Information
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        setActiveTab("siblings");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-bold text-[#b48400] hover:text-[#8a6500] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" />
+                      Edit Details
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Total Siblings</span>
+                      <strong className="text-slate-900 text-sm">{formData.siblingCount || siblings.length || "0"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Siblings Currently Studying</span>
+                      <strong className="text-slate-900 text-sm">{formData.siblingsStudyingCount || "0"}</strong>
+                    </div>
+                  </div>
+                  {siblings.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                      {siblings.map((sib, i) => (
+                        <div key={sib.id || i} className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs shadow-2xs space-y-1">
+                          <div className="flex items-center justify-between">
+                            <strong className="text-slate-900 font-heading text-sm">{sib.name || `Sibling ${i + 1}`}</strong>
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-bold text-slate-700 border border-slate-200">
+                              {sib.relationship || "Sibling"}
+                            </span>
+                          </div>
+                          <div className="text-slate-600">
+                            Age: <strong className="text-slate-900">{sib.age || "—"}</strong>
+                          </div>
+                          <div className="text-slate-600">
+                            Education: <strong className="text-slate-900">{sib.education || "—"}</strong>
+                          </div>
+                          {sib.institution && (
+                            <div className="text-[11px] text-slate-500 truncate" title={sib.institution}>
+                              Institution: {sib.institution}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic bg-white p-3 rounded-xl border border-slate-200">
+                      No siblings details entered by applicant.
+                    </p>
+                  )}
+                </div>
+
+                {/* Section D: Address Information */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                      <MapPinIcon className="w-4 h-4 text-[#F7BC0F]" />
+                      Address Information
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        setActiveTab("address");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-bold text-[#b48400] hover:text-[#8a6500] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" />
+                      Edit Details
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                    <div className="sm:col-span-2">
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Permanent Residential Address</span>
+                      <strong className="text-slate-900 leading-relaxed block mt-0.5">
+                        {formData.permanentAddress || formData.address || "—"}
+                      </strong>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500 uppercase font-medium">Current Residential Address</span>
+                        <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-2 py-0.2 rounded-full border border-slate-200">
+                          {formData.sameAsPermanent ? "Same as permanent" : "Different current address"}
+                        </span>
+                      </div>
+                      <strong className="text-slate-900 leading-relaxed block mt-0.5">
+                        {formData.sameAsPermanent ? (formData.permanentAddress || formData.address || "—") : (formData.currentAddress || "—")}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Village / Town / City</span>
+                      <strong className="text-slate-900">{formData.villageTown || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">District</span>
+                      <strong className="text-slate-900">{formData.district || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">State</span>
+                      <strong className="text-slate-900">{formData.state || "Tamil Nadu"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">PIN Code</span>
+                      <strong className="text-slate-900 font-mono">{formData.pincode || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Residence Ownership</span>
+                      <strong className="text-slate-900">{formData.residenceType || "Own"}</strong>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Approx Distance from Nearest College</span>
+                      <strong className="text-slate-900">{formData.collegeDistance ? `${formData.collegeDistance} km` : "—"}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section E: Educational Information */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-5">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                      <AcademicCapIcon className="w-4 h-4 text-[#F7BC0F]" />
+                      Educational Information (10th, 11th, 12th & Higher Education)
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        setActiveTab("educational");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-bold text-[#b48400] hover:text-[#8a6500] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" />
+                      Edit Details
+                    </button>
+                  </div>
+
+                  {/* 10th Standard Summary */}
+                  <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 space-y-3">
+                    <div className="font-bold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#F7BC0F]" />
+                        10th Standard (SSLC)
+                      </span>
+                      <span className="text-emerald-700 font-mono font-bold text-xs bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        Total: {formData.tenthTotalMarks || "—"} Marks ({formData.tenthPercentage || "—"}%)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">10th School Name</span>
+                        <strong className="text-slate-900">{formData.tenthSchool || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">Board of Examination</span>
+                        <strong className="text-slate-900">{formData.tenthBoard || "State Board"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">Year of Passing</span>
+                        <strong className="text-slate-900">{formData.tenthYear || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">School Address / Location</span>
+                        <strong className="text-slate-900">{formData.tenthSchoolAddress || "—"}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 11th Standard Summary & Mark Table */}
+                  <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 space-y-3">
+                    <div className="flex items-center justify-between font-bold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-sky-500" />
+                        11th Standard (HSC Plus One)
+                      </span>
+                      <span className="text-sky-700 font-mono font-bold text-xs bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
+                        Total: {calc11thTotal().total} / {calc11thTotal().max} {calc11thTotal().max > 0 ? `(${((calc11thTotal().total / calc11thTotal().max) * 100).toFixed(1)}%)` : ""}
+                      </span>
+                    </div>
+                    {eleventhSubjects.length > 0 && (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+                          <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-[11px]">
+                            <tr>
+                              <th className="py-2.5 px-3">Subject Name</th>
+                              <th className="py-2.5 px-3 text-center w-28">Max Marks</th>
+                              <th className="py-2.5 px-3 text-center w-36">Marks Obtained</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {eleventhSubjects.map((sub, i) => (
+                              <tr key={sub.id || i} className="hover:bg-slate-50">
+                                <td className="py-2 px-3 text-slate-900 font-medium">
+                                  {sub.subjectName || `Subject ${i + 1}`}
+                                </td>
+                                <td className="py-2 px-3 text-center text-slate-500">{sub.maxMarks}</td>
+                                <td className="py-2 px-3 text-center font-bold text-slate-900">{sub.marksObtained || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 12th Standard Summary & Mark Table */}
+                  <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 space-y-4">
+                    <div className="flex items-center justify-between font-bold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        12th Standard (HSC Plus Two)
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-800 font-mono font-black text-xs bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                          Cutoff: {formData.twelfthCutoff || "—"} / 200
+                        </span>
+                        <span className="text-emerald-800 font-mono font-black text-xs bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                          Total: {formData.twelfthTotalMarks || calc12thTotal().total} / {calc12thTotal().max || 600}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">12th School Name</span>
+                        <strong className="text-slate-900">{formData.twelfthSchool || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">Board of Examination</span>
+                        <strong className="text-slate-900">{formData.twelfthBoard || "State Board"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">Year of Passing</span>
+                        <strong className="text-slate-900">{formData.twelfthYear || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">Stream / Group</span>
+                        <strong className="text-slate-900">{formData.twelfthStream || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase">Medium of Instruction</span>
+                        <strong className="text-slate-900">{formData.mediumOfInstruction || "Tamil"}</strong>
+                      </div>
+                      <div className="sm:col-span-3">
+                        <span className="text-[11px] text-slate-500 block uppercase">School Address / District</span>
+                        <strong className="text-slate-900">{formData.twelfthSchoolAddress || "—"}</strong>
+                      </div>
+                    </div>
+
+                    {/* 12th Subject Marks Table */}
+                    {twelfthSubjects.length > 0 && (
+                      <div className="overflow-x-auto pt-2">
+                        <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+                          <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-[11px]">
+                            <tr>
+                              <th className="py-2.5 px-3">Subject Name</th>
+                              <th className="py-2.5 px-3 text-center w-28">Max Marks</th>
+                              <th className="py-2.5 px-3 text-center w-36">Marks Obtained</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {twelfthSubjects.map((sub, i) => (
+                              <tr key={sub.id || i} className="hover:bg-slate-50">
+                                <td className="py-2 px-3 text-slate-900 font-medium">{sub.subjectName || `Subject ${i + 1}`}</td>
+                                <td className="py-2 px-3 text-center text-slate-500">{sub.maxMarks}</td>
+                                <td className="py-2 px-3 text-center font-bold text-slate-900">{sub.marksObtained || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Higher Education & Course Preferences */}
+                  <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 space-y-3">
+                    <div className="font-bold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      Higher Education & Course Aspirations
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase font-medium">First-Gen College Learner</span>
+                        <strong className="text-slate-900">{formData.firstGraduate || "Yes"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase font-medium">Preferred Degree</span>
+                        <strong className="text-slate-900">{formData.preferredDegree || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase font-medium">1st Choice Course / Branch</span>
+                        <strong className="text-slate-900">{formData.preferredBranch || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase font-medium">2nd Choice Course / Branch</span>
+                        <strong className="text-slate-900">{formData.secondBranch || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase font-medium">Preferred College / Location</span>
+                        <strong className="text-slate-900">{formData.preferredCollegeLocation || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 block uppercase font-medium">Hostel Accommodation</span>
+                        <strong className="text-slate-900">{formData.hostelRequired || "Yes"}</strong>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="text-[11px] text-slate-500 block uppercase font-medium">Initial Career Goal</span>
+                        <strong className="text-slate-900">{formData.careerGoal || "—"}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section F: Financial Information */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                      <CurrencyRupeeIcon className="w-4 h-4 text-[#F7BC0F]" />
+                      Financial Information & Economic Hardship
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        setActiveTab("financial");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-bold text-[#b48400] hover:text-[#8a6500] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" />
+                      Edit Details
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Annual Family Income</span>
+                      <strong className="text-slate-900 font-mono text-sm">{formData.annualIncome ? `₹${formData.annualIncome}` : "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Monthly Family Inflow</span>
+                      <strong className="text-slate-900 font-mono text-sm">{formData.monthlyFamilyIncome ? `₹${formData.monthlyFamilyIncome}` : "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Income Sources</span>
+                      <strong className="text-slate-900">{formData.incomeSources || "—"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Outstanding Debts / Loans</span>
+                      <strong className="text-slate-900">{formData.familyDebts || "None"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Existing Education Loans</span>
+                      <strong className="text-slate-900">{formData.educationLoans || "None"}</strong>
+                    </div>
+                    <div className="sm:col-span-3">
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Ability to Afford College without Support</span>
+                      <strong className="text-slate-900">{formData.affordabilityWithoutSupport || "Cannot afford higher education without full sponsorship"}</strong>
+                    </div>
+                    <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[11px] text-slate-500 block uppercase font-bold">Financial Difficulties Faced by Family</span>
+                      <p className="text-slate-800 mt-1 leading-relaxed">{formData.financialDifficulties || "—"}</p>
+                    </div>
+                    <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[11px] text-slate-500 block uppercase font-bold">Why the Student Needs Scholarship Support</span>
+                      <p className="text-slate-800 mt-1 leading-relaxed">{formData.whyNeedSupport || "—"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section G: Personal and Background Information */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                      <SparklesIcon className="w-4 h-4 text-[#F7BC0F]" />
+                      Personal and Background Information
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        setActiveTab("background");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-bold text-[#b48400] hover:text-[#8a6500] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" />
+                      Edit Details
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Orphan Status</span>
+                      <strong className="text-slate-900">{formData.orphan || "No"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Single-Parent Status</span>
+                      <strong className="text-slate-900">{formData.singleParent || "No"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">First-Generation Learner</span>
+                      <strong className="text-slate-900">{formData.firstGenerationLearner || "Yes"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block uppercase font-medium">Willingness to Relocate in TN</span>
+                      <strong className="text-slate-900">{formData.willingToRelocateTN || "Yes"}</strong>
+                    </div>
+                    <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[11px] text-slate-500 block uppercase font-bold">Career Ambition</span>
+                      <p className="text-slate-800 mt-1 leading-relaxed">{formData.careerAmbition || formData.careerGoal || "—"}</p>
+                    </div>
+                    <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[11px] text-slate-500 block uppercase font-bold">Why the Student Wants Higher Education</span>
+                      <p className="text-slate-800 mt-1 leading-relaxed">{formData.higherEducationReason || "—"}</p>
+                    </div>
+                    <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[11px] text-slate-500 block uppercase font-bold">Future Goals & Vision</span>
+                      <p className="text-slate-800 mt-1 leading-relaxed">{formData.futureGoals || "—"}</p>
+                    </div>
+                    <div className="sm:col-span-2 bg-white p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[11px] text-slate-500 block uppercase font-bold">Special Family Circumstances</span>
+                      <p className="text-slate-800 mt-1 leading-relaxed">{formData.specialCircumstances || "None specified"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section H: Uploaded Documents & Certificates (Interactive Preview) */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                      <DocumentTextIcon className="w-4 h-4 text-[#F7BC0F]" />
+                      Uploaded Documents & Certificates (8 Documents)
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        setActiveTab("documents");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-bold text-[#b48400] hover:text-[#8a6500] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" />
+                      Manage Documents
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    {[
+                      { key: "studentPhoto", label: "Student Photograph", value: formData.studentPhoto, required: true },
+                      { key: "document10thMarksheet", label: "10th Marksheet", value: formData.document10thMarksheet, required: true },
+                      { key: "document11thMarksheet", label: "11th Marksheet", value: formData.document11thMarksheet, required: false },
+                      { key: "document12thMarksheet", label: "12th Marksheet", value: formData.document12thMarksheet, required: true },
+                      { key: "documentCommunityCertificate", label: "Community Certificate", value: formData.documentCommunityCertificate, required: false },
+                      { key: "documentIncomeCertificate", label: "Income Certificate", value: formData.documentIncomeCertificate, required: false },
+                      { key: "documentAadhaarCard", label: "Aadhaar Document", value: formData.documentAadhaarCard, required: false },
+                      { key: "documentParentIdProof", label: "Parent / Guardian ID Proof", value: formData.documentParentIdProof, required: false },
+                    ].map((doc, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-3.5 bg-white rounded-xl border transition flex flex-col justify-between shadow-2xs gap-3 ${
+                          doc.value ? "border-emerald-300" : "border-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <strong className="text-slate-900 block font-heading text-xs">{doc.label}</strong>
+                            <span className="text-[10px] text-slate-400 block mt-0.5">
+                              {doc.required ? "Mandatory Proof" : "Optional Certificate"}
+                            </span>
+                          </div>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              doc.value
+                                ? "bg-emerald-100 text-emerald-800"
+                                : doc.required
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {doc.value ? "✓ Uploaded" : doc.required ? "Pending" : "Not Provided"}
+                          </span>
+                        </div>
+
+                        {doc.value ? (
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                            {doc.key === "studentPhoto" ? (
+                              <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-200">
+                                <img src={doc.value} alt={doc.label} className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              <DocumentTextIcon className="w-5 h-5 text-emerald-600" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ isOpen: true, title: doc.label, url: doc.value })}
+                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer"
+                            >
+                              <EyeIcon className="w-3.5 h-3.5 text-slate-600" />
+                              <span>View File</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="pt-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStudentNavTab("dashboard");
+                                setActiveTab("documents");
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }}
+                              className="text-[11px] text-[#b48400] font-bold hover:underline"
+                            >
+                              + Upload Now
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section I: Legal Declaration */}
+                <div className="p-4 sm:p-5 bg-amber-50/70 border border-amber-200 rounded-2xl flex items-start gap-3">
+                  <CheckBadgeIcon className="w-6 h-6 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-xs">
+                    <strong className="text-slate-900 block font-heading">
+                      Official Applicant Declaration & Guarantee
+                    </strong>
+                    <p className="text-slate-700 leading-relaxed text-[11px]">
+                      "I hereby declare that all details submitted above are accurate and true to the best of my knowledge. I understand that Maatram Foundation provides <strong>100% cost-free scholarship sponsorships</strong> without collecting any donation or admission fee."
+                    </p>
+                    <div className="pt-1 flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                        ✓ Declared and Agreed by Applicant
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account & Session Actions Bottom Bar */}
+                <div className="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                  <div className="text-xs text-slate-500 font-medium">
+                    All application details are securely synchronized with Maatram Foundation admission portal.
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentNavTab("dashboard");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="px-5 py-2.5 bg-[#F7BC0F] hover:bg-[#e5ad0c] text-slate-950 font-heading font-black text-xs rounded-xl shadow-xs transition cursor-pointer"
+                    >
+                      Open Application Form
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsReviewOpen(true);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-heading font-bold text-xs rounded-xl border border-slate-200 transition cursor-pointer"
+                    >
+                      Print / Review Form
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSignOutModal(true)}
+                      className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 font-heading font-bold text-xs rounded-xl border border-red-200 transition cursor-pointer"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </main>
+        ) : (
+          /* ================= VIEW 1: APPLICATION DASHBOARD (DEFAULT) ================= */
+          <main className="w-full px-6 sm:px-8 lg:px-12 py-6 sm:py-8">
+            
+            {/* Banner Notification if Submitted */}
+            {isSubmitted ? (
+              <div className="bg-white border-2 border-emerald-500 rounded-3xl p-8 sm:p-12 text-center shadow-xl max-w-2xl mx-auto my-6 animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600 shadow-sm">
+                  <CheckCircleIcon className="w-10 h-10" />
+                </div>
+                <h2 className="font-heading font-black text-2xl sm:text-3xl text-slate-900 mt-5">
+                  Application Submitted Successfully!
+                </h2>
+                <p className="font-primary text-sm text-slate-600 mt-2 max-w-md mx-auto">
+                  Your scholarship application has been received under Application ID:{" "}
+                  <strong className="text-slate-900 font-mono">{formData.applicationNumber || "MF-2025-001"}</strong>.
+                  Our verification team will review your academic and socio-economic details.
+                </p>
+
+                <div className="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left max-w-md mx-auto space-y-2 text-xs text-slate-700">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Applicant:</span>
+                    <span className="font-semibold text-slate-900">{formData.fullName || "Student Applicant"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Target Degree:</span>
+                    <span className="font-semibold text-slate-900">{formData.preferredDegree || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Status:</span>
+                    <span className="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      Under Verification
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudentNavTab("status");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="w-full sm:w-auto px-8 py-3 bg-[#F7BC0F] hover:bg-[#e5ad0c] active:scale-[0.99] text-slate-950 font-heading font-black text-sm rounded-xl transition shadow-lg shadow-[#F7BC0F]/30 hover:shadow-xl border border-[#e5ad0c] flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Track Application Status</span>
+                    <ArrowRightIcon className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudentNavTab("dashboard");
+                      setIsReviewOpen(true);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="w-full sm:w-auto px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-heading font-bold text-sm rounded-xl transition border border-slate-200 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <EyeIcon className="w-4 h-4" />
+                    <span>View Submitted Form</span>
+                  </button>
+                </div>
+              </div>
+            ) : isReviewOpen ? (
           /* ================= FULL PAGE APPLICATION DOCUMENT VIEW ================= */
           <div className="w-full space-y-6">
 
@@ -2679,6 +3838,7 @@ export default function DashboardScreen() {
                       {[
                         { key: "studentPhoto", title: "Student Photograph", desc: "Recent passport size photo of the applicant", required: true },
                         { key: "document10thMarksheet", title: "10th Mark Sheet", desc: "SSLC statement of marks or provisional mark sheet", required: true },
+                        { key: "document11thMarksheet", title: "11th Mark Sheet", desc: "HSC +1 statement of marks or internet result copy", required: false },
                         { key: "document12thMarksheet", title: "12th Mark Sheet", desc: "HSC +2 statement of marks or internet result copy", required: true },
                         { key: "documentCommunityCertificate", title: "Community Certificate", desc: "Official community certificate issued by Revenue Department", required: false },
                         { key: "documentIncomeCertificate", title: "Income Certificate", desc: "Tahsildar / Village Administrative Officer income proof", required: false },
@@ -2829,6 +3989,8 @@ export default function DashboardScreen() {
         )}
 
       </main>
+        )}
+      </div>
       
       {/* ================= SIGN OUT CONFIRMATION MODAL ================= */}
       <SignOutModal
@@ -2840,6 +4002,68 @@ export default function DashboardScreen() {
           router.push("/");
         }}
       />
+
+      {/* ================= DOCUMENT PREVIEW MODAL ================= */}
+      {previewDocModal && previewDocModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2">
+                <DocumentTextIcon className="w-5 h-5 text-[#F7BC0F]" />
+                <h3 className="font-heading font-black text-sm text-slate-900">{previewDocModal.title}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {previewDocModal.url && (
+                  <a
+                    href={previewDocModal.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 rounded-xl transition"
+                    title="Open in new window"
+                  >
+                    <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreviewDocModal(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition cursor-pointer"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-slate-100/50 min-h-[300px]">
+              {previewDocModal.url ? (
+                previewDocModal.url.startsWith("data:image/") || previewDocModal.url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ? (
+                  <img
+                    src={previewDocModal.url}
+                    alt={previewDocModal.title}
+                    className="max-h-[70vh] w-auto object-contain rounded-xl shadow-xs border border-slate-200"
+                  />
+                ) : (
+                  <iframe
+                    src={previewDocModal.url}
+                    title={previewDocModal.title}
+                    className="w-full h-[65vh] rounded-xl border border-slate-200 bg-white"
+                  />
+                )
+              ) : (
+                <p className="text-xs text-slate-400">No preview available for this document.</p>
+              )}
+            </div>
+            <div className="p-3 border-t border-slate-100 flex justify-end bg-white">
+              <button
+                type="button"
+                onClick={() => setPreviewDocModal(null)}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-heading font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

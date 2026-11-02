@@ -1,5 +1,5 @@
-import SelectionProcessScreen from "../../pages/SelectionProcessScreen";
+import { redirect } from "next/navigation";
 
 export default function ProcessPage() {
-  return <SelectionProcessScreen />;
+  redirect("/dashboard");
 }
