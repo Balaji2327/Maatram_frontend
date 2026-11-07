@@ -32,36 +32,55 @@ export default function AdminEventsScreen() {
   const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
 
   // Delete Confirmation Modal State
   const [eventToDelete, setEventToDelete] = useState<EventCardData | null>(null);
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
 
-  // Events list state (starts empty on SSR to prevent hydration mismatch)
+  // Show the last fetched list immediately while refreshing from the backend.
   const [eventsList, setEventsList] = useState<EventCardData[]>([]);
 
-  // Safe client hydration from cache on mount
-  useEffect(() => {
+  const restoreCachedEvents = () => {
     try {
       const cached = sessionStorage.getItem("maatram_admin_events_cache");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setEventsList(parsed);
-          setIsLoadingEvents(false);
-        }
+      const parsed = cached ? JSON.parse(cached) : [];
+      if (Array.isArray(parsed)) {
+        setEventsList(
+          parsed.map((item: any) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              date: item.event_date || item.date || "TBD",
+              time: item.event_time || item.time || "",
+              location: item.location || "Chennai",
+              category: item.category || "Volunteer Drive",
+              targetAudience: item.target_audience || item.targetAudience || "",
+              imageUrl: item.image_url || item.imageUrl || "",
+              status: item.status || "upcoming",
+              mode: item.mode || "offline",
+              studentVolunteersNeeded: item.student_volunteers_needed ?? item.studentVolunteersNeeded ?? 0,
+              alumniVolunteersNeeded: item.alumni_volunteers_needed ?? item.alumniVolunteersNeeded ?? 0,
+              taskToComplete: item.task_to_complete || item.taskToComplete || "",
+              duration: item.duration || "",
+              startTime: item.start_time || item.startTime || "",
+              endTime: item.end_time || item.endTime || "",
+              eligibleYears: item.eligible_years || item.eligibleYears || ["1", "2", "3", "4"],
+              acceptedStudents: item.accepted_students || item.acceptedStudents || [],
+              acceptedAlumni: item.accepted_alumni || item.acceptedAlumni || [],
+              rejectedParticipants: item.rejected_participants || item.rejectedParticipants || [],
+              volunteerAssignments: item.volunteer_assignments || item.volunteerAssignments || {},
+          }))
+        );
       }
-    } catch (e) {
-      // ignore
+    } catch (error) {
+      console.warn("Could not read cached admin events:", error);
     }
-  }, []);
+  };
 
   // Fetch events from database
   const fetchEvents = async () => {
     try {
-      setIsLoadingEvents(true);
       const res = await adminApi.getEvents();
       if (res.success && Array.isArray(res.data)) {
         const formatted: EventCardData[] = res.data.map((item: any) => ({
@@ -97,8 +116,6 @@ export default function AdminEventsScreen() {
       }
     } catch (err) {
       console.error("Failed to fetch events from database:", err);
-    } finally {
-      setIsLoadingEvents(false);
     }
   };
 
@@ -107,6 +124,7 @@ export default function AdminEventsScreen() {
     if (!token) {
       router.replace("/admin/login");
     } else {
+      restoreCachedEvents();
       fetchEvents();
     }
   }, [router]);
@@ -496,27 +514,7 @@ export default function AdminEventsScreen() {
           </div>
 
           {/* Events Grid */}
-          {isLoadingEvents && eventsList.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((sk) => (
-                <div
-                  key={sk}
-                  className="bg-white border border-slate-200 rounded-3xl p-6 shadow-2xs space-y-4 animate-pulse"
-                >
-                  <div className="h-44 bg-slate-100 rounded-2xl w-full" />
-                  <div className="space-y-2">
-                    <div className="h-5 bg-slate-200 rounded-md w-3/4" />
-                    <div className="h-3.5 bg-slate-100 rounded-md w-full" />
-                    <div className="h-3.5 bg-slate-100 rounded-md w-2/3" />
-                  </div>
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <div className="h-8 bg-slate-100 rounded-xl w-24" />
-                    <div className="h-8 bg-slate-100 rounded-xl w-20" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredEvents.length === 0 ? (
+          {filteredEvents.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center space-y-3 shadow-2xs">
               <CalendarDaysIcon className="w-12 h-12 mx-auto text-slate-300 stroke-1" />
               <p className="text-sm font-heading font-bold text-slate-800">No Volunteer Events Found</p>

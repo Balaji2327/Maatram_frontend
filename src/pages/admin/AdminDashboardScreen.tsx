@@ -16,7 +16,7 @@ import {
   ArrowRightIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { adminApi, getAdminToken } from "../../lib/api";
+import { adminApi, getAdminToken, getAdminCachedData, setAdminCachedData } from "../../lib/api";
 import AdminSidebar from "../../components/AdminSidebar";
 import SignOutModal from "../../components/SignOutModal";
 
@@ -40,7 +40,6 @@ export default function AdminDashboardScreen() {
     selected: 0,
     rejected: 0,
   });
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
 
@@ -50,17 +49,20 @@ export default function AdminDashboardScreen() {
       const res = await adminApi.getApplications();
       if (res.success && res.data) {
         setApplications(res.data);
+        setAdminCachedData("applications", res);
         if (res.stats) setStats(res.stats);
       }
     } catch (err: any) {
       console.error(err);
     } finally {
-      setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
+    const cachedApplications = getAdminCachedData<any>("applications")?.data;
+    if (cachedApplications) setApplications(cachedApplications);
+
     fetchApplications();
   }, []);
 
@@ -151,7 +153,7 @@ export default function AdminDashboardScreen() {
                   Applications
                 </span>
                 <p className="text-2xl font-black font-mono text-slate-900 mt-1">
-                  {isLoading ? "..." : applications.length}
+                  {applications.length}
                 </p>
                 <p className="text-[10px] text-slate-400 mt-1">
                   {stats.submitted} submitted · {stats.draft} draft
@@ -177,7 +179,7 @@ export default function AdminDashboardScreen() {
                   Volunteers
                 </span>
                 <p className="text-2xl font-black font-mono text-slate-900 mt-1">
-                  {isLoading ? "..." : volunteerStats.reviewed}
+                  {volunteerStats.reviewed}
                 </p>
                 <p className="text-[10px] text-slate-400 mt-1">
                   {volunteerStats.pending} calls pending
@@ -519,11 +521,7 @@ export default function AdminDashboardScreen() {
                   </Link>
                 </div>
 
-                {isLoading ? (
-                  <div className="py-12 text-center text-xs text-slate-400">
-                    Loading student applications...
-                  </div>
-                ) : recentApplications.length === 0 ? (
+                {recentApplications.length === 0 ? (
                   <div className="py-12 text-center text-xs text-slate-400">
                     No applications submitted yet.
                   </div>

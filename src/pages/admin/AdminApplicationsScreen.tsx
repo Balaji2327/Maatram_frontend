@@ -11,7 +11,6 @@ import {
   DocumentTextIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
-  ArrowPathIcon,
   ArrowLeftOnRectangleIcon,
   ArrowLeftIcon,
   EyeIcon,
@@ -34,7 +33,7 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import * as XLSX from "xlsx";
-import { adminApi, getAdminToken } from "../../lib/api";
+import { adminApi, getAdminToken, getAdminCachedData, setAdminCachedData } from "../../lib/api";
 import SignOutModal from "../../components/SignOutModal";
 import AdminSidebar, { AdminTab } from "../../components/AdminSidebar";
 
@@ -61,7 +60,6 @@ export default function AdminApplicationsScreen() {
     selected: 0,
     rejected: 0,
   });
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -95,6 +93,7 @@ export default function AdminApplicationsScreen() {
       const res = await adminApi.getApplications();
       if (res.success && res.data) {
         setApplications(res.data);
+        setAdminCachedData("applications", res);
         if (res.stats) setStats(res.stats);
 
         // Check if an applicant ID was in the URL or sessionStorage to restore on reload
@@ -129,12 +128,14 @@ export default function AdminApplicationsScreen() {
     } catch (err: any) {
       setErrorMessage(err.message || "Network error loading applications");
     } finally {
-      setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
+    const cachedApplications = getAdminCachedData<any>("applications")?.data;
+    if (cachedApplications) setApplications(cachedApplications);
+
     fetchApplications();
   }, []);
 
@@ -1472,12 +1473,7 @@ export default function AdminApplicationsScreen() {
                   )}
                 </div>
 
-                {isLoading ? (
-                  <div className="py-20 text-center text-slate-500 text-xs">
-                    <ArrowPathIcon className="w-6 h-6 animate-spin mx-auto text-[#F7BC0F] mb-2" />
-                    Loading applicants from database...
-                  </div>
-                ) : filteredApplications.length === 0 ? (
+                {filteredApplications.length === 0 ? (
                   <div className="py-20 text-center text-slate-500 text-xs">
                     <DocumentTextIcon className="w-10 h-10 mx-auto text-slate-300 mb-2" />
                     <p className="font-bold text-slate-700">No applicants found</p>

@@ -9,14 +9,13 @@ import {
   EnvelopeIcon,
   PhoneIcon,
   MapPinIcon,
-  ArrowPathIcon,
   CheckBadgeIcon,
   BriefcaseIcon,
   EyeIcon,
   XMarkIcon,
   LinkIcon,
 } from "@heroicons/react/24/outline";
-import { getAdminToken, adminApi } from "../../lib/api";
+import { getAdminToken, adminApi, getAdminCachedData, setAdminCachedData, subscribeToAdminCache } from "../../lib/api";
 import AdminSidebar from "../../components/AdminSidebar";
 import SignOutModal from "../../components/SignOutModal";
 
@@ -45,10 +44,12 @@ export default function AdminAlumniScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState("All");
   const [alumni, setAlumni] = useState<AlumniItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedAlumni, setSelectedAlumni] = useState<AlumniItem | null>(null);
 
   useEffect(() => {
+    const cachedAlumni = getAdminCachedData<AlumniItem[]>("alumni");
+    if (cachedAlumni) setAlumni(cachedAlumni);
+
     const token = getAdminToken();
     if (!token) {
       router.replace("/admin/login");
@@ -57,23 +58,23 @@ export default function AdminAlumniScreen() {
 
   const fetchAlumni = async () => {
     try {
-      setIsLoading(true);
       const res = await adminApi.getAlumni();
       if (res && res.success && Array.isArray(res.data)) {
         setAlumni(res.data);
-      } else {
-        setAlumni([]);
+        setAdminCachedData("alumni", res.data);
       }
     } catch (err) {
       console.error("Error fetching alumni:", err);
-      setAlumni([]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    const unsubscribe = subscribeToAdminCache("alumni", () => {
+      const cached = getAdminCachedData<AlumniItem[]>("alumni");
+      if (cached) setAlumni(cached);
+    });
     fetchAlumni();
+    return unsubscribe;
   }, []);
 
   const companiesList = useMemo(() => {
@@ -153,14 +154,7 @@ export default function AdminAlumniScreen() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="py-16 text-center text-slate-400">
-                      <ArrowPathIcon className="w-6 h-6 mx-auto mb-2 text-emerald-500 animate-spin" />
-                      <p className="text-xs text-slate-500">Loading alumni directory...</p>
-                    </td>
-                  </tr>
-                ) : filteredAlumni.length === 0 ? (
+                {filteredAlumni.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-16 text-center text-slate-400">
                       <AcademicCapIcon className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-1" />

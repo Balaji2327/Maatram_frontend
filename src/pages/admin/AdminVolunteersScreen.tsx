@@ -10,7 +10,6 @@ import {
   ClockIcon,
   DocumentTextIcon,
   MagnifyingGlassIcon,
-  ArrowPathIcon,
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
   TableCellsIcon,
@@ -27,7 +26,7 @@ import {
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import * as XLSX from "xlsx";
-import { adminApi, getAdminToken } from "../../lib/api";
+import { adminApi, getAdminToken, getAdminCachedData, setAdminCachedData, subscribeToAdminCache } from "../../lib/api";
 import AdminSidebar from "../../components/AdminSidebar";
 import SignOutModal from "../../components/SignOutModal";
 
@@ -47,13 +46,11 @@ export default function AdminVolunteersScreen() {
 
   // Registered Volunteers Directory State
   const [volunteers, setVolunteers] = useState<any[]>([]);
-  const [isVolunteersLoading, setIsVolunteersLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<"all" | "student" | "alumni">("all");
   const [selectedVolunteer, setSelectedVolunteer] = useState<any | null>(null);
 
   // Applicant Verification Reviews Data states
   const [applications, setApplications] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -75,19 +72,14 @@ export default function AdminVolunteersScreen() {
 
   // Fetch registered volunteers list
   const fetchVolunteers = async () => {
-    setIsVolunteersLoading(true);
     try {
       const res = await adminApi.getRegisteredVolunteers();
       if (res && res.success && Array.isArray(res.data)) {
         setVolunteers(res.data);
-      } else {
-        setVolunteers([]);
+        setAdminCachedData("volunteers", res.data);
       }
     } catch (err: any) {
       console.error("fetchVolunteers error:", err);
-      setVolunteers([]);
-    } finally {
-      setIsVolunteersLoading(false);
     }
   };
 
@@ -99,20 +91,37 @@ export default function AdminVolunteersScreen() {
       const res = await adminApi.getApplications();
       if (res.success && res.data) {
         setApplications(res.data);
+        setAdminCachedData("applications", res);
       } else {
         setErrorMessage(res.message || "Failed to load applications");
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Network error loading applications");
     } finally {
-      setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
+    const cachedVolunteers = getAdminCachedData<any[]>("volunteers");
+    const cachedApplications = getAdminCachedData<any>("applications")?.data;
+    if (cachedVolunteers) setVolunteers(cachedVolunteers);
+    if (cachedApplications) setApplications(cachedApplications);
+
+    const unsubscribeVolunteers = subscribeToAdminCache("volunteers", () => {
+      const cached = getAdminCachedData<any[]>("volunteers");
+      if (cached) setVolunteers(cached);
+    });
+    const unsubscribeApplications = subscribeToAdminCache("applications", () => {
+      const cached = getAdminCachedData<any>("applications")?.data;
+      if (cached) setApplications(cached);
+    });
     fetchVolunteers();
     fetchApplications();
+    return () => {
+      unsubscribeVolunteers();
+      unsubscribeApplications();
+    };
   }, []);
 
   // Volunteer stats calculation (for admission candidates needing verification, excluding enrolled students)
@@ -513,12 +522,7 @@ export default function AdminVolunteersScreen() {
                 </div>
               </div>
 
-              {isVolunteersLoading ? (
-                <div className="py-20 text-center text-slate-500 text-xs">
-                  <ArrowPathIcon className="w-6 h-6 animate-spin mx-auto text-[#F7BC0F] mb-2" />
-                  Loading registered volunteers...
-                </div>
-              ) : filteredVolunteers.length === 0 ? (
+              {filteredVolunteers.length === 0 ? (
                 <div className="py-20 text-center text-slate-500 text-xs space-y-2">
                   <UserGroupIcon className="w-10 h-10 mx-auto text-slate-300 stroke-1" />
                   <p className="font-bold text-slate-700">No registered volunteers found</p>
@@ -639,12 +643,7 @@ export default function AdminVolunteersScreen() {
                 </div>
               </div>
 
-              {isLoading ? (
-                <div className="py-20 text-center text-slate-500 text-xs">
-                  <ArrowPathIcon className="w-6 h-6 animate-spin mx-auto text-[#F7BC0F] mb-2" />
-                  Loading volunteer records...
-                </div>
-              ) : filteredApplications.length === 0 ? (
+              {filteredApplications.length === 0 ? (
                 <div className="py-20 text-center text-slate-500 text-xs">
                   <DocumentTextIcon className="w-10 h-10 mx-auto text-slate-300 mb-2" />
                   <p className="font-bold text-slate-700">No matching records found</p>

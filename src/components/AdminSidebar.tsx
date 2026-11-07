@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import {
   Squares2X2Icon,
   DocumentTextIcon,
@@ -17,6 +18,7 @@ import {
   ArrowLeftOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import AskMarkBot from "./AskMarkBot";
+import { adminApi, getAdminToken, setAdminCachedData } from "../lib/api";
 
 export type AdminTab =
   | "dashboard"
@@ -45,6 +47,34 @@ export default function AdminSidebar({
   onSignOutClick,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (!getAdminToken()) return;
+    Promise.all([
+      adminApi.getApplications(),
+      adminApi.getRegisteredVolunteers(),
+      adminApi.getAlumni(),
+      adminApi.getStudents(),
+      adminApi.getEvents(),
+      adminApi.getPosts(),
+    ]).then(([applications, volunteers, alumni, students, events, posts]) => {
+      if (applications.success) setAdminCachedData("applications", applications);
+      if (volunteers.success) setAdminCachedData("volunteers", volunteers.data || []);
+      if (alumni.success) setAdminCachedData("alumni", alumni.data || []);
+      if (students.success) setAdminCachedData("students", students.data || []);
+      if (events.success) {
+        setAdminCachedData("events", events.data || []);
+        try {
+          sessionStorage.setItem("maatram_admin_events_cache", JSON.stringify(events.data || []));
+        } catch (error) {
+          console.warn("Could not cache admin events:", error);
+        }
+      }
+      if (posts.success) setAdminCachedData("posts", posts.data || []);
+    }).catch((error) => {
+      console.error("Failed to prefetch admin tab data:", error);
+    });
+  }, []);
 
   // Auto-detect active tab from current URL pathname
   const currentTab: AdminTab = activeTab || (

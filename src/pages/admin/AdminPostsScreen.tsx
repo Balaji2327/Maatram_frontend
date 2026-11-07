@@ -16,7 +16,7 @@ import {
   VideoCameraIcon,
   LanguageIcon,
 } from "@heroicons/react/24/outline";
-import { getAdminToken, adminApi } from "../../lib/api";
+import { getAdminToken, adminApi, getAdminCachedData, setAdminCachedData } from "../../lib/api";
 import AdminSidebar from "../../components/AdminSidebar";
 import SignOutModal from "../../components/SignOutModal";
 import DeleteConfirmModal from "../../components/DeleteConfirmModal";
@@ -30,8 +30,6 @@ export default function AdminPostsScreen() {
   const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   // Start with false if cache exists so cards show instantly with zero delay or skeleton
-  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
-  const [showSlowNetworkIndicator, setShowSlowNetworkIndicator] = useState(false);
 
   // Create Post Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -112,18 +110,10 @@ export default function AdminPostsScreen() {
   const [isDeletingPost, setIsDeletingPost] = useState(false);
 
   // Community Posts state initialized directly from instant memory cache
-  const [postsList, setPostsList] = useState<PostCardData[]>(() => cachedPostsList || []);
+  const [postsList, setPostsList] = useState<PostCardData[]>([]);
 
   // Fetch all posts from database via backend API
   const fetchPosts = async () => {
-    // Only show a loading spinner if network takes longer than 1.5 seconds and there are no cached posts
-    let slowTimer: NodeJS.Timeout | null = null;
-    if (!cachedPostsList || cachedPostsList.length === 0) {
-      slowTimer = setTimeout(() => {
-        setShowSlowNetworkIndicator(true);
-      }, 1500);
-    }
-
     try {
       const res = await adminApi.getPosts();
       if (res.success && Array.isArray(res.data)) {
@@ -156,17 +146,21 @@ export default function AdminPostsScreen() {
         });
         cachedPostsList = formatted;
         setPostsList(formatted);
+        setAdminCachedData("posts", formatted);
       }
     } catch (err) {
       console.error("Failed to load posts from database:", err);
-    } finally {
-      if (slowTimer) clearTimeout(slowTimer);
-      setShowSlowNetworkIndicator(false);
-      setIsLoadingPosts(false);
     }
   };
 
   useEffect(() => {
+    if (cachedPostsList) {
+      setPostsList(cachedPostsList);
+    } else {
+      const cachedPosts = getAdminCachedData<PostCardData[]>("posts");
+      if (cachedPosts) setPostsList(cachedPosts);
+    }
+
     const token = getAdminToken();
     if (!token) {
       router.replace("/admin/login");
@@ -370,14 +364,6 @@ export default function AdminPostsScreen() {
               />
             </div>
           </div>
-
-          {/* Slow network indicator banner only if network takes more than 1.5s on initial empty fetch */}
-          {showSlowNetworkIndicator && (
-            <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-center justify-center gap-2 text-xs text-amber-900 animate-in fade-in">
-              <div className="w-3.5 h-3.5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
-              <span>Fetching latest updates from server...</span>
-            </div>
-          )}
 
           {/* Posts Grid Layout - Instant rendering */}
           {filteredPosts.length === 0 ? (

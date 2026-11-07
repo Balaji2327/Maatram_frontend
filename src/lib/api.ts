@@ -51,6 +51,45 @@ export interface ApiResponse<T = any> {
   [key: string]: any;
 }
 
+const adminDataCache: Record<string, unknown> = {};
+const adminCacheListeners: Record<string, Set<() => void>> = {};
+
+export function getAdminCachedData<T>(key: string): T | undefined {
+  if (adminDataCache[key] !== undefined) {
+    return adminDataCache[key] as T;
+  }
+  if (typeof window === "undefined") return undefined;
+  try {
+    const cached = sessionStorage.getItem(`maatram_admin_cache_${key}`);
+    if (!cached) return undefined;
+    const value = JSON.parse(cached) as T;
+    adminDataCache[key] = value;
+    return value;
+  } catch (error) {
+    console.warn(`Could not read admin cache for ${key}:`, error);
+    return undefined;
+  }
+}
+
+export function setAdminCachedData<T>(key: string, value: T): void {
+  adminDataCache[key] = value;
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem(`maatram_admin_cache_${key}`, JSON.stringify(value));
+    } catch (error) {
+      console.warn(`Could not cache admin data for ${key}:`, error);
+    }
+  }
+  adminCacheListeners[key]?.forEach((listener) => listener());
+}
+
+export function subscribeToAdminCache(key: string, listener: () => void): () => void {
+  const listeners = adminCacheListeners[key] || new Set<() => void>();
+  listeners.add(listener);
+  adminCacheListeners[key] = listeners;
+  return () => listeners.delete(listener);
+}
+
 // Create dedicated Axios Instance
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -398,9 +437,17 @@ export const adminApi = {
     return callApi(() => apiClient.get(`/admin/events/${eventId}/assignments${query}`));
   },
 
-  // Students Directory
+  // Students Directory & Academic Records
   getStudents: async (): Promise<ApiResponse> => {
     return callApi(() => apiClient.get("/admin/students"));
+  },
+
+  getStudentAcademics: async (email: string): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get(`/admin/students/${encodeURIComponent(email)}/academics`));
+  },
+
+  saveStudentAcademics: async (email: string, payload: { records: any[]; cgpa?: string }): Promise<ApiResponse> => {
+    return callApi(() => apiClient.post(`/admin/students/${encodeURIComponent(email)}/academics`, payload));
   },
 
   // Alumni Directory
@@ -417,4 +464,3 @@ export const adminApi = {
     clearAdminToken();
   },
 };
-
