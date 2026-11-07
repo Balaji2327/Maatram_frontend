@@ -7,6 +7,11 @@ import {
   UserCircleIcon,
   PencilSquareIcon,
   TrashIcon,
+  GlobeAltIcon,
+  CalendarDaysIcon,
+  MapPinIcon,
+  VideoCameraIcon,
+  PhotoIcon,
 } from "@heroicons/react/24/outline";
 
 export interface PostCardData {
@@ -79,28 +84,33 @@ export default function PostCard({
         <div className="p-5 space-y-3">
           <div className="flex flex-wrap items-center gap-1.5">
             {post.language && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
-                🌐 {post.language}
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 flex items-center gap-1">
+                <GlobeAltIcon className="w-3 h-3 text-slate-500 shrink-0" />
+                <span>{post.language}</span>
               </span>
             )}
             {post.scheduleDate && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700">
-                📅 {post.scheduleDate} {post.scheduleTime ? `@ ${post.scheduleTime}` : ""}
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 flex items-center gap-1">
+                <CalendarDaysIcon className="w-3 h-3 text-blue-500 shrink-0" />
+                <span>{post.scheduleDate} {post.scheduleTime ? `@ ${post.scheduleTime}` : ""}</span>
               </span>
             )}
             {post.location && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 truncate max-w-[140px]">
-                📍 {post.location}
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 truncate max-w-[140px] flex items-center gap-1">
+                <MapPinIcon className="w-3 h-3 text-emerald-500 shrink-0" />
+                <span className="truncate">{post.location}</span>
               </span>
             )}
             {post.videoUrl && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700">
-                🎥 Video
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 flex items-center gap-1">
+                <VideoCameraIcon className="w-3 h-3 text-purple-500 shrink-0" />
+                <span>Video</span>
               </span>
             )}
             {post.images && post.images.length > 1 && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800">
-                🖼️ {post.images.length} Photos
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 flex items-center gap-1">
+                <PhotoIcon className="w-3 h-3 text-amber-600 shrink-0" />
+                <span>{post.images.length} Photos</span>
               </span>
             )}
           </div>

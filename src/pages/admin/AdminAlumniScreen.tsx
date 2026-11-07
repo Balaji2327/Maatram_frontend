@@ -14,6 +14,7 @@ import {
   BriefcaseIcon,
   EyeIcon,
   XMarkIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline";
 import { getAdminToken, adminApi } from "../../lib/api";
 import AdminSidebar from "../../components/AdminSidebar";
@@ -286,8 +287,9 @@ export default function AdminAlumniScreen() {
                 <p className="text-slate-800 flex items-center gap-2"><PhoneIcon className="w-3.5 h-3.5 text-slate-400" />{selectedAlumni.phone || selectedAlumni.whatsapp}</p>
                 <p className="text-slate-600 flex items-center gap-2"><MapPinIcon className="w-3.5 h-3.5 text-slate-400" />{selectedAlumni.current_city}</p>
                 {selectedAlumni.linkedin && (
-                  <p className="text-blue-600 font-mono text-[11px] pt-1">
-                    🔗 {selectedAlumni.linkedin}
+                  <p className="text-blue-600 font-mono text-[11px] pt-1 flex items-center gap-1.5">
+                    <LinkIcon className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <span>{selectedAlumni.linkedin}</span>
                   </p>
                 )}
               </div>

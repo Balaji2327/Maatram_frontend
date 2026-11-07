@@ -63,10 +63,24 @@ export const apiClient: AxiosInstance = axios.create({
 // Request Interceptor: Attach Bearer JWT Token automatically (student auth or admin token)
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = getAuthToken() || getAdminToken();
+    const isAdminRoute = Boolean(config.url && config.url.includes("/admin"));
+
+    // For admin routes, prioritize admin token
+    const token = isAdminRoute
+      ? (getAdminToken() || getAuthToken())
+      : (getAuthToken() || getAdminToken());
+
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    if (isAdminRoute && config.headers) {
+      const adminUser = getStoredAdminUser();
+      if (adminUser?.email) {
+        config.headers["x-admin-email"] = adminUser.email;
+      }
+    }
+
     return config;
   },
   (error: AxiosError) => {
@@ -227,6 +241,12 @@ export function getStoredAdminUser(): any | null {
   }
 }
 
+export function saveAdminUser(user: any) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("maatram_admin_user", JSON.stringify(user));
+  }
+}
+
 export function clearAdminToken() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("maatram_admin_token");
@@ -362,6 +382,22 @@ export const adminApi = {
     return callApi(() => apiClient.delete(`/admin/events/${id}`));
   },
 
+  // Approve Volunteer Assignment (Hybrid AI Matching trigger)
+  approveVolunteerAssignment: async (eventId: string, volunteerEmail: string, batchSize: number = 10): Promise<ApiResponse> => {
+    return callApi(() =>
+      apiClient.post(`/admin/events/${eventId}/approve-assignment`, {
+        volunteerEmail,
+        batchSize,
+      })
+    );
+  },
+
+  // Get Assigned Applicants for an Event
+  getEventAssignments: async (eventId: string, email?: string): Promise<ApiResponse> => {
+    const query = email ? `?email=${encodeURIComponent(email)}` : "";
+    return callApi(() => apiClient.get(`/admin/events/${eventId}/assignments${query}`));
+  },
+
   // Students Directory
   getStudents: async (): Promise<ApiResponse> => {
     return callApi(() => apiClient.get("/admin/students"));
@@ -370,6 +406,11 @@ export const adminApi = {
   // Alumni Directory
   getAlumni: async (): Promise<ApiResponse> => {
     return callApi(() => apiClient.get("/admin/alumni"));
+  },
+
+  // Volunteers Directory
+  getRegisteredVolunteers: async (): Promise<ApiResponse> => {
+    return callApi(() => apiClient.get("/admin/volunteers/list"));
   },
 
   logout: () => {

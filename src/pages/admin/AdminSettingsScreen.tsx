@@ -105,8 +105,8 @@ export default function AdminSettingsScreen() {
           setQrCodeUrl(profRes.data.qrCodeUrl);
         }
 
-        // Only fetch administrators if the current user is admin@maatram.com
-        if (email.toLowerCase() === "admin@maatram.com") {
+        // Only fetch administrators if the current user is a super admin
+        if (profRes.data?.role === "super_admin" || email.toLowerCase() === "admin@maatram.com") {
           try {
             const adminsRes = await adminApi.getAdministrators();
             if (adminsRes.success && Array.isArray(adminsRes.data)) {
@@ -516,8 +516,8 @@ export default function AdminSettingsScreen() {
             </div>
           </div>
 
-          {/* 3 & 4. SECTIONS: ADD NEW ADMINISTRATOR & ACTIVE ADMINISTRATORS (Accessible only to admin@maatram.com) */}
-          {isMounted && adminEmail.toLowerCase() === "admin@maatram.com" && (
+          {/* 3 & 4. SECTIONS: ADD NEW ADMINISTRATOR & ACTIVE ADMINISTRATORS (Accessible to Super Administrators) */}
+          {isMounted && (adminRole === "super_admin" || adminEmail.toLowerCase() === "admin@maatram.com") && (
             <>
               {/* 3. SECTION: ADD NEW ADMINISTRATOR */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
